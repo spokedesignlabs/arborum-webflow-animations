@@ -18,3 +18,13 @@
 
 /* Power use cases on phones: the photo sits above the text, never behind it (src/sections/use-cases.js) */
 @media (max-width:767px){.home-usecases_panel{background-image:none!important}}
+
+/* Use cases and Beyond Energy copy: short fade when the text changes (use-cases.js, beyond-energy.js) */
+.home-beyond_copy,.home-usecases_card{transition:opacity .28s ease,transform .28s ease}
+.home-beyond_copy.is-out{opacity:0;transform:translateY(6px)}
+.home-usecases_card.is-out{opacity:0}
+.home-beyond_net:not(.is-arrow),.home-usecases_tab{cursor:pointer}
+
+/* Header chapter marker: the section you are in (smooth-scroll.js) */
+.header_chapter-link{transition:color .3s}
+.header_chapter-link.wf-on{color:#0071B1!important;font-weight:600}
