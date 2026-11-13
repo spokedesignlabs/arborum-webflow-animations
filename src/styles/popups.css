@@ -1,0 +1,46 @@
+/* Pop-ups (src/ui/popups.js) */
+
+/* highlighted phrase that opens an info window */
+.dw-trig{font:inherit;color:inherit;letter-spacing:inherit;text-align:inherit;text-decoration:none!important;border:0;padding:0 .08em;margin:0 -.08em;cursor:pointer;pointer-events:auto;border-radius:0;
+  background:linear-gradient(transparent 62%,rgba(109,194,242,.32) 62%);transition:background .3s}
+.dw-trig:hover,.dw-trig.on{background:linear-gradient(transparent 0,rgba(109,194,242,.32) 0)}
+.dw-trig:focus-visible{outline:2px solid #0071B1;outline-offset:3px}
+.home-statement_highlight{color:inherit!important;text-decoration:none!important;border:0!important;background:none!important}
+.home-statement_highlight .dw-trig,.home-beyond_copy .dw-trig{position:relative;z-index:4}
+
+/* info window */
+.dw{position:fixed;z-index:1000;padding:26px 28px 22px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  box-shadow:0 0 0 1px rgba(0,113,177,.25),0 24px 60px rgba(5,19,28,.22);color:#05131C;text-align:left;overflow:hidden;font-family:inherit}
+.dw[hidden]{display:none}
+.dw.in{animation:dwin .45s cubic-bezier(.2,.7,.2,1) both}
+.dw-c{position:absolute;width:14px;height:14px;border:0 solid #0071B1}
+.dw-c.tl{top:6px;left:6px;border-top-width:1.5px;border-left-width:1.5px}
+.dw-c.tr{top:6px;right:6px;border-top-width:1.5px;border-right-width:1.5px}
+.dw-c.bl{bottom:6px;left:6px;border-bottom-width:1.5px;border-left-width:1.5px}
+.dw-c.br{bottom:6px;right:6px;border-bottom-width:1.5px;border-right-width:1.5px}
+.dw-scan{position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,#6DC2F2,transparent)}
+.dw.in .dw-scan{animation:r1scan 1s ease-out both}
+.dw-x{position:absolute;top:12px;right:16px;font-size:22px;line-height:1;color:rgba(5,19,28,.6);background:none;border:0;padding:0;cursor:pointer}
+.dw-x:hover{color:#0071B1}
+.dw-k{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#0071B1;padding-right:24px}
+.dw h4{font-size:24px;line-height:1.2;font-weight:600;letter-spacing:-.01em;margin:8px 0 0;color:#05131C}
+.dw p{font-size:15px;line-height:1.5;margin:10px 0 0;color:rgba(5,19,28,.78)}
+.dw ol{list-style:none;margin:18px 0 0;padding:0 0 0 26px;position:relative}
+.dw ol:empty{display:none}
+.dw ol::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:1.2px;background:rgba(0,113,177,.45)}
+.dw li{position:relative;font-size:17px;line-height:1.3;padding:0 0 14px;color:rgba(5,19,28,.32);transition:color .4s}
+.dw li::before{content:"";position:absolute;left:-26px;top:5px;width:11px;height:11px;border-radius:50%;box-shadow:inset 0 0 0 1.5px #0071B1;background:#fff;transition:background .4s}
+.dw li.on{color:#05131C}
+.dw li.on::before{background:#0071B1}
+/* World Model style: title and paragraph only */
+.dw.wide{padding:30px 32px 26px}
+.dw.wide .dw-k,.dw.wide ol{display:none!important}
+.dw.wide h4{font-size:28px;margin-top:0}
+.dw.wide p{font-size:15px;line-height:1.55;margin-bottom:0}
+@keyframes dwin{from{opacity:0;transform:translateY(8px) scale(.98);clip-path:inset(0 0 100% 0)}to{opacity:1;transform:none;clip-path:inset(0 0 0 0)}}
+@keyframes r1scan{0%{top:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#05131C;color:#fff;padding:11px 18px;font-size:14px;font-weight:500;line-height:1.3;
+  opacity:0;transition:.3s;z-index:1001;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1;transform:translate(-50%,0)}
