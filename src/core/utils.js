@@ -2,9 +2,10 @@
  * Colours, maths, canvas sizing, "is it on screen" and the reduced-motion flag.
  */
 
-// Reduced motion: respects the OS setting. Add ?motion=1 to the URL to force motion on.
-export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches && !/[?&]motion=1/.test(location.search);
-document.documentElement.classList.toggle('rm', RM);
+// Reduced motion. Off by default: the animations play even when the computer's "reduce motion" setting is on.
+// Set FOLLOW_OS_REDUCED_MOTION to true to calm everything down for people who turn that setting on.
+const FOLLOW_OS_REDUCED_MOTION = false;
+export const RM = FOLLOW_OS_REDUCED_MOTION && matchMedia('(prefers-reduced-motion: reduce)').matches && !/[?&]motion=1/.test(location.search);
 
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -31,7 +32,7 @@ export function visible(el, cb) { if (!('IntersectionObserver' in window)) { cb(
 export function debounce(f, ms) { let t; return function () { clearTimeout(t); t = setTimeout(f, ms || 150) } }
 
 // Keep a section's real content above the canvas we add behind it
-export function lift(host) { [].forEach.call(host.children, ch => { if (ch.classList.contains('wf-anim') || ch.id === 'gfx' || ch.classList.contains('wf-hero-fade')) return; if (getComputedStyle(ch).position === 'static') ch.style.position = 'relative'; ch.style.zIndex = ch.style.zIndex || '1' }) }
+export function lift(host) { [].forEach.call(host.children, ch => { if (ch.tagName === 'CANVAS' || /_fade\b/.test(ch.className)) return; if (getComputedStyle(ch).position === 'static') ch.style.position = 'relative'; ch.style.zIndex = ch.style.zIndex || '1' }) }
 
 // Run after the page has loaded (fonts and images in place), like the original design build
 export function onLoad(fn, delay = 0) { if (document.readyState === 'complete') setTimeout(fn, delay); else addEventListener('load', () => setTimeout(fn, delay)) }
@@ -40,3 +41,9 @@ export function onLoad(fn, delay = 0) { if (document.readyState === 'complete') 
 export function keyable(el, fn) { if (!el.hasAttribute('tabindex')) el.tabIndex = 0; el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e) } }) }
 
 export const SVGNS = 'http://www.w3.org/2000/svg';
+
+// Find a Webflow canvas by class inside a section (all canvases are placed in Webflow)
+export const canvasIn = (host, cls) => host && host.querySelector('canvas.' + cls);
+
+// Short animation on an element (Web Animations API). The end state is kept.
+export function play(el, frames, opts) { if (!el || !el.animate) return null; return el.animate(frames, Object.assign({ fill: 'forwards' }, typeof opts === 'number' ? { duration: opts } : opts)) }

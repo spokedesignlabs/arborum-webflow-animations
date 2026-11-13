@@ -3,13 +3,13 @@
  *  - Canvas: threads fall in from above, then the camera flies through three network shapes:
  *    a flat channel (Energy) -> a tunnel (Telecom) -> a constellation (Other networks). The background tint follows.
  *  - Copy: the heading and paragraph change at 34% and 67% of the way through, with a short fade.
- *  - The three network labels highlight with the copy; click one to scroll to its part.
- *  - The heading is a highlighted phrase that opens an info window.
- * Attaches to: #beyond, .home-beyond_sticky, .home-beyond_copy (h3, p), .home-beyond_net
+ *  - The three network labels (Energy, Telecom, Other networks) highlight with the copy. They are labels, not links.
+ *  - The heading phrase (.home-beyond_trigger inside the h3) opens the "One change moves every network" window.
+ * Webflow elements: #beyond > .home-beyond_sticky > canvas.home-beyond_canvas,
+ *   .home-beyond_copy (h3 > .home-beyond_trigger, p), .home-beyond_net
  */
-import {RM,$,$$,clamp,mix,rgba,rnd,setSeed,fit,visible,debounce,lift,keyable,NAVY,DEEP,VIO} from '../core/utils.js';
+import {RM,$,$$,clamp,mix,rgba,rnd,setSeed,fit,visible,debounce,lift,canvasIn,NAVY,DEEP,VIO} from '../core/utils.js';
 import {makeTrigger} from '../ui/popups.js';
-import {scrollToY} from '../ui/smooth-scroll.js';
 
 const COPY=[['Different networks. Endless possibilities.','The world’s most critical systems — telecom, finance, logistics and beyond — are complex networks of interconnected systems. We are extending World Model beyond energy to understand them, anticipate problems and discover better solutions.'],
  ['Understanding networks. Improving how they operate.','We are extending our World Models to telecom networks, spanning infrastructure asset management and network operations. By modelling how interconnected network components behave, we aim to help operators make better decisions across increasingly complex and distributed systems.'],
@@ -20,18 +20,19 @@ const NETWORKS={k:'Different networks. Endless possibilities.',t:'One change mov
 /* ---- Copy, labels and the info window ---- */
 function initCopy(bs){
  const copy=bs.querySelector('.home-beyond_copy'),h3=copy&&copy.querySelector('h3'),pp=copy&&copy.querySelector('p'),nets=$$('.home-beyond_net:not(.is-arrow)',bs);
- let cur=-1,tm,trig=null;
- if(h3)trig=makeTrigger(h3,NETWORKS,{width:440});
- function set(i,force){if(i===cur&&!force)return;const first=cur<0;cur=i;nets.forEach((n,k)=>n.classList.toggle('is-active',k===i));if(first||!copy)return;
-  copy.classList.add('is-out');clearTimeout(tm);tm=setTimeout(()=>{(trig||h3).textContent=COPY[i][0];pp.textContent=COPY[i][1];copy.classList.remove('is-out')},RM?0:260)}
+ const trig=copy&&(copy.querySelector('.home-beyond_trigger')||h3);
+ let cur=-1,tm;
+ if(trig)makeTrigger(trig,NETWORKS,{width:440});
+ if(copy)copy.style.transition='opacity .28s ease,transform .28s ease';
+ function set(i){if(i===cur)return;const first=cur<0;cur=i;nets.forEach((n,k)=>n.classList.toggle('is-active',k===i));if(first||!copy)return;
+  copy.style.opacity='0';copy.style.transform='translateY(6px)';clearTimeout(tm);tm=setTimeout(()=>{trig.textContent=COPY[i][0];pp.textContent=COPY[i][1];copy.style.opacity='';copy.style.transform=''},RM?0:260)}
  function tick(){const r=bs.getBoundingClientRect(),p=clamp(-r.top/Math.max(1,r.height-innerHeight));set(p<STEPS[0]?0:p<STEPS[1]?1:2)}
  addEventListener('scroll',tick,{passive:true});tick();
- nets.forEach((n,k)=>{const go=()=>{const top=bs.getBoundingClientRect().top+scrollY,span=bs.offsetHeight-innerHeight;scrollToY(top+span*(k*.33+.16))};n.addEventListener('click',go);keyable(n,go)});
 }
 
 /* ---- Canvas: channel -> tunnel -> constellation ---- */
 function initMorph(){var morphSec=document.getElementById('beyond'),stage=morphSec&&morphSec.querySelector('.home-beyond_sticky');if(!stage)return;
- var cv=document.createElement('canvas');cv.id='morph';cv.className='wf-anim';cv.setAttribute('aria-hidden','true');stage.prepend(cv);lift(stage);
+ var cv=canvasIn(stage,'home-beyond_canvas');if(!cv)return;cv.id='morph';cv.setAttribute('aria-hidden','true');lift(stage);
  let morphP=0,morphE=0;
  function mScroll(){const vh=innerHeight,m=morphSec.getBoundingClientRect();morphP=clamp(-m.top/Math.max(1,m.height-vh));morphE=RM?1:clamp((vh*.6-m.top)/(vh*.6+(m.height-vh)*.08))}
  addEventListener('scroll',mScroll,{passive:true});mScroll();

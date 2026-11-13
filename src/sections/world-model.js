@@ -3,10 +3,10 @@
  *  - Click an option: a wave spreads from it across the network. Each other option is marked
  *    "Affected" at the moment the wave reaches it (nearest first), and an info window explains the option.
  *  - While nobody has clicked, a wave starts from one of the first four options every 3.6 seconds.
- * Attaches to: .home-world_network with its .home-world_chip children
- * Styles: src/styles/world-model.css
+ * Webflow elements: .home-world_network > canvas.home-world_canvas, .home-world_chip ×10
+ *   (each chip holds its label text and a .home-world_affected tag, which sits just above the chip)
  */
-import { RM, $$, clamp, debounce, visible, keyable } from '../core/utils.js';
+import { RM, $, $$, clamp, debounce, visible, keyable, canvasIn, play } from '../core/utils.js';
 import Net from '../core/net.js';
 import { openWindow } from '../ui/popups.js';
 
@@ -28,25 +28,39 @@ const INFO = {
   Grievance: 'Every complaint is a signal about something real in the network. A high bill, a power cut or a dropped connection usually traces back to a specific event on the ground. The model links each grievance to that event, so customers get an answer based on facts.'
 };
 
+// how an option looks in each state (its resting and hover looks are Webflow styles on .home-world_chip)
+const LOOK = {
+  open: { backgroundColor: '#0071B1', color: '#fff', boxShadow: '0 0 0 4px rgba(109,194,242,.3)' },
+  on: { backgroundColor: '#0071B1', color: '#fff', boxShadow: 'none' },
+  hit: { backgroundColor: 'rgba(109,194,242,.22)', color: '#05131C', boxShadow: 'inset 0 0 0 1px #0071B1' },
+  rest: { backgroundColor: '', color: '', boxShadow: '' }
+};
+const label = el => [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim();
+
 export default function initWorldModel() {
-  const pg = document.querySelector('.home-world_network');
-  if (!pg) return;
-  pg.classList.add('wf-wm');
-  pg.style.backgroundImage = 'none';
-  const cv = document.createElement('canvas'); cv.className = 'wf-anim'; cv.setAttribute('aria-hidden', 'true');
-  pg.prepend(cv);
+  const pg = $('.home-world_network');
+  const cv = canvasIn(pg, 'home-world_canvas');
+  if (!cv) return;
+  cv.setAttribute('aria-hidden', 'true');
+  pg.style.backgroundImage = 'none'; // the static network picture is only for when the script is off
 
   // match Webflow chips to the option list by their text
   const chips = $$('.home-world_chip', pg);
-  const tagEls = TAGS.map(([s]) => chips.find(c => c.textContent.trim() === s)).filter(Boolean);
-  tagEls.forEach(el => { el.classList.add('wf-tag'); el.setAttribute('role', 'button'); el.setAttribute('aria-haspopup', 'dialog') });
+  const tagEls = TAGS.map(([s]) => chips.find(c => label(c) === s)).filter(Boolean);
+  tagEls.forEach(el => {
+    el.__k = label(el); el.__s = {};
+    el.setAttribute('role', 'button'); el.setAttribute('aria-haspopup', 'dialog');
+    Object.assign(el.style, { right: 'auto', bottom: 'auto', margin: '0', zIndex: '2', transform: 'translate(-50%,-140%)' });
+  });
+  function paint(el) { const s = el.__s; Object.assign(el.style, LOOK[s.open ? 'open' : s.on ? 'on' : s.hit ? 'hit' : 'rest']) }
+  function state(el, k, v) { el.__s[k] = v; paint(el) }
 
   const wm = Net(cv, {
     seed: 21, spacing: 112, speed: SPEED,
     fade: (y, H) => clamp(Math.min(y, H - y) / (H * .14)),
     onBuild: (ns, W, H) => {
       tagEls.forEach(el => {
-        const t = TAGS.find(t => t[0] === el.textContent.trim()), n = nearestIn(ns, W * t[1], H * t[2]);
+        const t = TAGS.find(t => t[0] === el.__k), n = nearestIn(ns, W * t[1], H * t[2]);
         el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; el.__n = n;
       });
     }
@@ -54,38 +68,44 @@ export default function initWorldModel() {
   function nearestIn(ns, x, y) { let b = ns[0], bd = 1e12; for (const n of ns) { const d = (n.x - x) ** 2 + (n.y - y) ** 2; if (d < bd) { bd = d; b = n } } return b }
 
   let touched = false, tms = [];
-  // "Affected" appears on each option when the wave reaches it
+  // "Affected" appears on each option at the moment the wave reaches it (nearest first)
+  function hit(t, on) {
+    state(t, 'hit', on);
+    const a = $('.home-world_affected', t);
+    if (a) a.style.opacity = on ? '1' : '';
+    if (on && !RM) play(t, [{ boxShadow: 'inset 0 0 0 1px #0071B1, 0 0 0 0 rgba(109,194,242,.6)' }, { boxShadow: 'inset 0 0 0 1px #0071B1, 0 0 0 16px rgba(109,194,242,0)' }], { duration: 1100, easing: 'ease-out', fill: 'none' });
+  }
   function affect(b) {
     tms.forEach(clearTimeout); tms = [];
-    tagEls.forEach(t => t.classList.remove('hit'));
+    tagEls.forEach(t => hit(t, false));
     const x0 = parseFloat(b.style.left), y0 = parseFloat(b.style.top);
     tagEls.forEach(t => {
       if (t === b || t.offsetParent === null) return;
       const d = Math.hypot(parseFloat(t.style.left) - x0, parseFloat(t.style.top) - y0), ms = RM ? 0 : d / SPEED * 1000;
-      tms.push(setTimeout(() => { t.classList.remove('hit'); void t.offsetWidth; t.classList.add('hit') }, ms));
-      tms.push(setTimeout(() => t.classList.remove('hit'), ms + 2200));
+      tms.push(setTimeout(() => hit(t, true), ms));
+      tms.push(setTimeout(() => hit(t, false), ms + 2200));
     });
   }
   function tap(el) {
     touched = true;
-    tagEls.forEach(e => e.classList.toggle('on', e === el));
+    tagEls.forEach(e => state(e, 'on', e === el));
     if (el.__n) wm.ripple(el.__n.x, el.__n.y, 6);
     affect(el);
-    const k = el.textContent.trim();
-    el.classList.add('dw-on');
-    openWindow(el, { t: k, p: INFO[k] || '' }, { wide: true, width: 520, align: 'center', step: 450, onClose: t => t.classList.remove('dw-on') });
+    state(el, 'open', true);
+    openWindow(el, { t: el.__k, p: INFO[el.__k] || '' }, { wide: true, width: 520, align: 'center', step: 450, onClose: t => state(t, 'open', false) });
   }
   tagEls.forEach(el => {
     el.addEventListener('click', e => { e.stopPropagation(); tap(el) });
     keyable(el, () => tap(el));
   });
 
+  // until someone clicks, a wave starts from one of the first four options every 3.6 seconds
   let wmVis = false, idx = 2;
   visible(pg, v => { wmVis = v; wm.run(v) });
   setInterval(() => {
     if (!wmVis || touched || document.hidden || RM) return;
     const el = tagEls[idx]; if (!el || !el.__n) return;
-    tagEls.forEach((e, k) => e.classList.toggle('on', k === idx));
+    tagEls.forEach((e, k) => state(e, 'on', k === idx));
     wm.ripple(el.__n.x, el.__n.y, 5);
     idx = (idx + 1) % 4;
   }, 3600);

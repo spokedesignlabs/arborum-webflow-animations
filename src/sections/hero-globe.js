@@ -1,18 +1,19 @@
 /* Hero globe (Home)
  * Dotted globe with land, hub arcs and a pulse you can send by clicking. Drag to turn it.
- * Attaches to: .section_home-hero (adds canvas#globe and canvas#gfx).
+ * Webflow elements: .section_home-hero > canvas.home-hero_globe (the globe; its colour blend, glow and
+ *   opacity are Webflow styles), canvas.home-hero_dots (land dots), .home-hero_fade (soft fade at the bottom).
+ * While it runs, the hero's static globe picture is swapped for the plain sky gradient the globe sits on.
  * Data: src/data/globe.json (land dots, hubs, arcs).
  */
-import {RM,$,$$,clamp,mix,rgba,rnd,setSeed,DPR,fit,visible,debounce,lift,NAVY,DEEP,LIGHT,CREAM,PEACH,VIO} from '../core/utils.js';
+import {canvasIn,RM,$,$$,clamp,mix,rgba,rnd,setSeed,DPR,fit,visible,debounce,lift,NAVY,DEEP,LIGHT,CREAM,PEACH,VIO} from '../core/utils.js';
 import GD from '../data/globe.json';
 const route='home';
 export default function initHeroGlobe(){var heroEl=document.querySelector('.section_home-hero');if(!heroEl)return;
  heroEl.id=heroEl.id||'hero';if(getComputedStyle(heroEl).position==='static')heroEl.style.position='relative';
  heroEl.style.backgroundImage='linear-gradient(#005C96 0%,#0071B1 16%,#1A82C4 32%,#3E9FD8 48%,#5BB6EC 62%,#6DC2F2 70%,#A6CFEA 77%,#DCCFE0 83%,#F0CDBE 88%,#F4D3B6 93%,#F3F2EE 100%)';
- var cv=document.createElement('canvas');cv.id='globe';cv.className='wf-anim';cv.setAttribute('aria-hidden','true');heroEl.prepend(cv);
- var fade=document.createElement('div');fade.className='wf-hero-fade';heroEl.appendChild(fade);
- var hn=document.createElement('div');hn.id='hint';hn.style.display='none';heroEl.appendChild(hn);
- var btn=heroEl.querySelector('.button');if(btn)btn.classList.add('btn');lift(heroEl);
+ var cv=canvasIn(heroEl,'home-hero_globe');if(!cv)return;cv.id='globe';cv.setAttribute('aria-hidden','true');
+ var dotsCv=canvasIn(heroEl,'home-hero_dots');if(dotsCv)dotsCv.setAttribute('aria-hidden','true');
+ var btn=heroEl.querySelector('.button');lift(heroEl);
  const hero=heroEl;
 /* ---- The world: dotted globe, thin network, one smooth response ---- */
 const gc=$('#globe');let gx,gW=0,gH=0,gR=0,gCx=0,gCy=0,gOn=false,gRaf=0;
@@ -23,12 +24,12 @@ const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 const ARCS=GD.edges.map(([i,j])=>{const a=HV[i],b=HV[j],o=Math.acos(clamp(dot(a,b),-1,1)),pts=[];for(let k=0;k<=36;k++){const t=k/36,s1=Math.sin((1-t)*o)/Math.sin(o),s2=Math.sin(t*o)/Math.sin(o),lift=1+.018*Math.sin(Math.PI*t)*Math.min(1,o);pts.push([(s1*a[0]+s2*b[0])*lift,(s1*a[1]+s2*b[1])*lift,(s1*a[2]+s2*b[2])*lift])}return{i,j,pts}});
 const ADJ=GD.hubs.map(()=>[]);ARCS.forEach((e,k)=>{ADJ[e.i].push([e.j,k]);ADJ[e.j].push([e.i,k])});
 const LAT0=-36;let lon=78,lat=LAT0,vLon=0,tLat=LAT0,pLon=0,dragging=false,wave=null;
-function buildGlobe(){const f=fit(gc);gx=f.x;gW=f.w;gH=f.h;gR=clamp(gW*.46,300,760);gCx=gW/2;const ctaB=$('#hero .btn').getBoundingClientRect(),gT=gc.getBoundingClientRect().top,crestY=ctaB.height?Math.min(ctaB.bottom-gT+56,gH-170):gH*.68;gCy=(gW<gH?Math.max(crestY,$('#hero').getBoundingClientRect().bottom-gT-(gW<600?210:330)):crestY)+gR;drawGlobe(performance.now())}
+function buildGlobe(){const f=fit(gc);gx=f.x;gW=f.w;gH=f.h;gR=clamp(gW*.46,300,760);gCx=gW/2;const ctaB=(btn||heroEl).getBoundingClientRect(),gT=gc.getBoundingClientRect().top,crestY=ctaB.height?Math.min(ctaB.bottom-gT+56,gH-170):gH*.68;gCy=(gW<gH?Math.max(crestY,$('#hero').getBoundingClientRect().bottom-gT-(gW<600?210:330)):crestY)+gR;drawGlobe(performance.now())}
 function proj(v,out){const a=(lon+pLon)*Math.PI/180,b=lat*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);const x=v[0]*ca-v[2]*sa,z0=v[0]*sa+v[2]*ca,y=v[1]*cb-z0*sb,z=v[1]*sb+z0*cb;out[0]=gCx+x*gR;out[1]=gCy-y*gR;out[2]=z;return out}
 function unproj(px,py){const X=(px-gCx)/gR,Y=(gCy-py)/gR,q=X*X+Y*Y;if(q>=1)return null;const Z=Math.sqrt(1-q),a=(lon+pLon)*Math.PI/180,b=lat*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);const z0=Z*cb-Y*sb,y=Y*cb+Z*sb;return[X*ca+z0*sa,y,-X*sa+z0*ca]}
 const easeOut=t=>1-Math.pow(1-t,3),WAVE=4.4;
 const GRAT=[];for(let lo=0;lo<180;lo+=30){const a=[];for(let la=-180;la<=180;la+=5)a.push(toV(la<=90&&la>=-90?la:(la>0?180-la:-180-la),la<=90&&la>=-90?lo:lo+180));GRAT.push(a)}for(let la=-60;la<=60;la+=30){const a=[];for(let lo=-180;lo<=180;lo+=5)a.push(toV(la,lo));GRAT.push(a)}
-function drawGlobe(t){if(!gx)return;let x=gx;x.clearRect(0,0,gW,gH);const FX=(()=>{let c=document.getElementById('gfx');if(!c){c=document.createElement('canvas');c.id='gfx';c.setAttribute('aria-hidden','true');gc.after(c)}if(c.width!==gc.width||c.height!==gc.height){c.width=gc.width;c.height=gc.height}const f=c.getContext('2d');f.setTransform(1,0,0,1,0,0);f.clearRect(0,0,c.width,c.height);f.setTransform(gx.getTransform());return f})();
+function drawGlobe(t){if(!gx)return;let x=gx;x.clearRect(0,0,gW,gH);const FX=(()=>{const c=dotsCv;if(!c)return gx;if(c.width!==gc.width||c.height!==gc.height){c.width=gc.width;c.height=gc.height}const f=c.getContext('2d');f.setTransform(1,0,0,1,0,0);f.clearRect(0,0,c.width,c.height);f.setTransform(gx.getTransform());return f})();
  const hi=gR-70,ho=gR+170,hs=(gR-hi)/(ho-hi);const halo=x.createRadialGradient(gCx,gCy,hi,gCx,gCy,ho);halo.addColorStop(0,'rgba(255,255,255,0)');halo.addColorStop(hs,'rgba(255,255,255,.8)');halo.addColorStop(hs+.035,'rgba(255,255,255,.3)');halo.addColorStop(hs+.26,'rgba(255,255,255,0)');halo.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=halo;x.fillRect(0,0,gW,gH);
  const disc=x.createRadialGradient(gCx-gR*.24,gCy-gR*.8,gR*.04,gCx,gCy,gR);disc.addColorStop(0,'#2E9BDA');disc.addColorStop(.3,'#0071B1');disc.addColorStop(.72,'#00497A');disc.addColorStop(1,'#04304F');x.fillStyle=disc;x.beginPath();x.arc(gCx,gCy,gR,0,6.283);x.fill();
  const crest=x.createLinearGradient(gCx-gR,0,gCx+gR,0);crest.addColorStop(0,'rgba(109,194,242,0)');crest.addColorStop(.3,'rgba(255,255,255,.9)');crest.addColorStop(.5,'rgba(255,255,255,1)');crest.addColorStop(.7,'rgba(255,255,255,.9)');crest.addColorStop(1,'rgba(109,194,242,0)');x.strokeStyle=crest;x.lineWidth=1.2;x.beginPath();x.arc(gCx,gCy,gR,0,6.283);x.stroke();
@@ -60,10 +61,10 @@ let gDrift=1,gLast=0;function gLoop(t){gRaf=0;if(!gOn)return;const dt=Math.min(5
 let tPLon=0;const gKick=()=>{if(gOn&&!gRaf)gRaf=requestAnimationFrame(gLoop)};
 visible(hero,v=>{gOn=v;gKick()});
 function sendWave(v,raw){if(window.__arcReveal)window.__arcReveal(v);let best=0,bd=-2;HV.forEach((h,i)=>{const d=dot(h,v);if(d>bd){bd=d;best=i}});const lv=GD.hubs.map(()=>99);lv[best]=0;const q=[best];while(q.length){const a=q.shift();for(const[b]of ADJ[a])if(lv[b]===99){lv[b]=lv[a]+1;q.push(b)}}wave={v:raw?v:HV[best],t:performance.now(),lv};gKick()}
-const hint=$('#hint');let down=null,lastHit=0;
+const hint={style:{}};let down=null,lastHit=0;
 hero.addEventListener('pointerdown',e=>{if(e.target.closest('a'))return;down={x:e.clientX,y:e.clientY,lon,moved:false};hero.setPointerCapture&&hero.setPointerCapture(e.pointerId)});
-hero.addEventListener('pointermove',e=>{const r=gc.getBoundingClientRect();if(down){const d=e.clientX-down.x;if(Math.abs(d)>4){down.moved=true;dragging=true;hero.classList.add('grabbing')}if(down.moved){const n=down.lon-d*.075;vLon=(n-lon)*.45;lon=n;gKick()}}else if(!RM){tPLon=-((e.clientX-r.left)/r.width-.5)*2.4;tLat=LAT0+((e.clientY-r.top)/r.height-.5)*.9;gKick()}});
-hero.addEventListener('pointerup',e=>{if(!down)return;const m=down.moved;down=null;dragging=false;hero.classList.remove('grabbing');if(m){gKick();return}const r=gc.getBoundingClientRect();const v=unproj(e.clientX-r.left,e.clientY-r.top);let target=v;if(!target){const dx=e.clientX-r.left-gCx,dy=gCy-(e.clientY-r.top),n=Math.hypot(dx,dy)||1;target=unproj(gCx+dx/n*gR*.92,gCy-dy/n*gR*.92)||HV[0]}sendWave(target);lastHit=performance.now();hint.style.opacity=0;0});
+hero.addEventListener('pointermove',e=>{const r=gc.getBoundingClientRect();if(down){const d=e.clientX-down.x;if(Math.abs(d)>4){down.moved=true;dragging=true;}if(down.moved){const n=down.lon-d*.075;vLon=(n-lon)*.45;lon=n;gKick()}}else if(!RM){tPLon=-((e.clientX-r.left)/r.width-.5)*2.4;tLat=LAT0+((e.clientY-r.top)/r.height-.5)*.9;gKick()}});
+hero.addEventListener('pointerup',e=>{if(!down)return;const m=down.moved;down=null;dragging=false;if(m){gKick();return}const r=gc.getBoundingClientRect();const v=unproj(e.clientX-r.left,e.clientY-r.top);let target=v;if(!target){const dx=e.clientX-r.left-gCx,dy=gCy-(e.clientY-r.top),n=Math.hypot(dx,dy)||1;target=unproj(gCx+dx/n*gR*.92,gCy-dy/n*gR*.92)||HV[0]}sendWave(target);lastHit=performance.now();hint.style.opacity=0;0});
 hero.addEventListener('pointerleave',()=>{tPLon=0;tLat=LAT0;gKick()});
 if(!RM)setTimeout(()=>{if(!wave&&route==='home'){const c=unproj(gCx,gCy-gR*.985);if(c)sendWave(c,true)}},650);
 

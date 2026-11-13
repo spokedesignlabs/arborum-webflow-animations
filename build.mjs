@@ -8,7 +8,7 @@ const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 const banner = `/*! Arborum website animations v${version} · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */`;
 const common = {
   entryPoints: ['src/index.js'], bundle: true, format: 'iife', target: ['es2020'],
-  loader: { '.css': 'text', '.json': 'json' },
+  loader: { '.json': 'json' },
   define: { __VERSION__: JSON.stringify(version) },
   banner: { js: banner }, legalComments: 'none', logLevel: 'info'
 };

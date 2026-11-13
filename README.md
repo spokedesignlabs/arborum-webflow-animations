@@ -1,45 +1,62 @@
 # Arborum · Webflow animations and interactions
 
-All the motion and interaction code for the Arborum Webflow site (Home and About), in one place.
-Webflow loads one built file, `dist/arborum.min.js`, from jsDelivr. Each part finds its own Webflow
-section by its Client-First class and skips itself if that section isn't on the page, so the same file
-loads on every page. If one part fails, the others keep running.
+The motion and interaction code for the Arborum Webflow site (Home and About).
+Webflow loads one built file, `dist/arborum.min.js`, from jsDelivr.
 
-The design reference is the approved HTML build (Figma page **Design Feedback 4**). The code here is
-ported from that build, so the site moves the same way.
+**This repo holds behaviour only: JavaScript and data.** Every element (canvases, the pop-up, the tower
+cards, progress bars) and every style lives in Webflow, on Client-First classes. The script finds those
+elements by class, draws on the canvases and moves things with inline values while it runs. If a part's
+elements aren't on the page, that part skips itself, so the same file loads on every page. If one part
+fails, the others keep running.
+
+The design reference is the approved HTML build (Figma page **Design Feedback 4**).
+
+## Turning the animations on and off
+
+The site works and looks finished without this script: Webflow shows its static pictures (hero globe,
+World Model network, footer) and every section sits in its normal layout.
+
+| To | Do this |
+|---|---|
+| Turn them off for everyone | Webflow > Site settings > Custom code: remove the `arborumanimations` script, then publish. Add it back to turn them on. |
+| Turn them off without touching code | In Webflow, give the **Body** element the custom attribute `data-animations` = `off`, then publish. Delete the attribute to turn them back on. |
+| Share a static link | Add `?animations=off` to the address, e.g. `https://arboram.webflow.io/?animations=off`. Nothing to publish. |
+
+The animations play even when a computer has "reduce motion" turned on. To respect that setting instead,
+set `FOLLOW_OS_REDUCED_MOTION = true` in `src/core/utils.js`.
 
 ## Which file does what
 
-| What you see | File | Webflow element it attaches to |
+| What you see | File | Webflow elements it uses |
 |---|---|---|
-| Hero globe: drag to turn it, click to send a pulse | `src/sections/hero-globe.js` (+ `src/data/globe.json`) | `.section_home-hero` |
-| Threads from the hero past "AI for critical decisions…" onto the Energy photo; Energy section pins, photo fades in and zooms, threads land on the towers, text arrives in steps, tower points with cards | `src/sections/statement-energy.js` | `.section_home-statement`, `#energy` |
-| One World Model: lines in from the dependencies, out to the decisions | `src/sections/one-world-model.js` | `.home-owm_component` |
-| Power use cases: tabs, 7-second auto-rotate, stacked list on phones | `src/sections/use-cases.js` | `.home-usecases_tab`, `.home-usecases_panel` |
-| Beyond Energy: network morph on canvas, copy changes at 34% and 67%, network labels | `src/sections/beyond-energy.js` | `#beyond` |
-| World Model playground: ripple network, options marked "Affected" as the wave reaches them, info window per option | `src/sections/world-model.js` | `.home-world_network`, `.home-world_chip` |
-| About hero network plane | `src/sections/about-network.js` | `.section_about-hero` |
-| Footer dot field | `src/sections/footer-dots.js` | `.footer_component` |
+| Hero globe: drag to turn it, click to send a pulse | `src/sections/hero-globe.js` (+ `src/data/globe.json`) | `.section_home-hero` > `canvas.home-hero_globe`, `canvas.home-hero_dots`, `.home-hero_fade` |
+| Threads from the hero past "AI for critical decisions…" onto the Energy photo; Energy pins, photo fades in and zooms, threads land on the towers, text arrives in steps, tower points with cards | `src/sections/statement-energy.js` | `canvas.home-statement_threads` (first child of `.main-wrapper`), `#energy` > `.home-energy_stage` > `canvas.home-energy_threads`, `.home-energy_point` ×3, `.home-energy_card` |
+| One World Model: lines draw in from the dependencies and out to the decisions, dots travel along them | `src/sections/one-world-model.js` | `.home-owm_component` > `canvas.home-owm_lines` |
+| Power use cases: progress bar fills for 7 seconds, then the next tab opens; stacked list on phones | `src/sections/use-cases.js` | `.home-usecases_tab` ×3 (each with `.home-usecases_progress`), `.home-usecases_panel` |
+| Beyond Energy: network morph, copy changes at 34% and 67%, network labels highlight | `src/sections/beyond-energy.js` | `#beyond` > `.home-beyond_sticky` > `canvas.home-beyond_canvas`, `.home-beyond_trigger` (in the h3) |
+| World Model playground: ripple network; options marked "Affected" as the wave reaches them; info window per option | `src/sections/world-model.js` | `.home-world_network` > `canvas.home-world_canvas`, `.home-world_chip` (each with `.home-world_affected`) |
+| About hero network plane | `src/sections/about-network.js` | `.section_about-hero` > `canvas.about-hero_canvas` |
+| Footer dot field and the light sweep across the Arborum wordmark | `src/sections/footer-dots.js` | `.footer_component` > `canvas.footer_dots`, `img.footer_wordmark` + `canvas.footer_wordmark-canvas` |
 | Smooth scrolling (Lenis), in-page links glide to their section, chapter marker | `src/ui/smooth-scroll.js` | whole page, `.header_chapter-link` |
-| Info windows ("critical decisions", "Different networks…", World Model options) and the "link pending" toast | `src/ui/popups.js` | `.home-statement_highlight`, Beyond `h3`, links with `href="#"` |
-| Button and link hovers | `src/ui/buttons.js` | `.button`, `.header_link`, `.footer_link` |
+| Info windows ("critical decisions", "Different networks…", World Model options) and the "link pending" toast | `src/ui/popups.js` | `.popup_component`, `.toast_component` (both on every page) |
+| Button and link hovers that follow the pointer | `src/ui/buttons.js` | `.button`, `.header_link`, `.header_chapter-link`, `.footer_link` |
 | Blocks fading up as they come into view | `src/ui/reveal.js` | see the list in the file |
 
-Shared code: `src/core/utils.js` (colours, maths, canvas sizing, reduced motion) and `src/core/net.js`
-(the ripple network used by the World Model).
-
-CSS lives next to it in `src/styles/` (one file per area, same names) and is added to the page as one
-`<style id="arborum-anim">` block. `src/index.js` starts every part in order.
+Shared code: `src/core/utils.js` (colours, maths, canvas sizing, the reduced-motion switch) and
+`src/core/net.js` (the ripple network used by the World Model). `src/index.js` starts every part in order
+and holds the on/off check.
 
 ## Common changes
 
+- **Look of anything** (colours, sizes, spacing, hover states): change the class in Webflow.
 - **Text in a pop-up or card:** the constants at the top of the section file (`CRITICAL`, `TOWERS`,
   `INFO`, `NETWORKS`, `COPY`).
 - **A real link arrives** (dashboard, whitepaper, contact form, social): set it in Webflow. Links that
   still point to `#` show the toast; the messages are in `PENDING` in `src/ui/popups.js`.
-- **Energy photo replaced:** keep the 1536×1024 framing and the tower points in `TOWERS` still fit.
+- **Energy photo replaced:** keep the 1536×1024 framing so the tower points in `TOWERS` still fit.
 - **Scroll feel:** `lerp` in `src/ui/smooth-scroll.js` (lower is smoother and slower).
-- **Energy zoom or pin length:** `ZOOM` in `statement-energy.js`, height in `statement-energy.css`.
+- **Energy zoom or pin length:** `ZOOM` and `PIN` in `statement-energy.js`.
+- **Use case timing:** `ROTATE_MS` in `use-cases.js`.
 
 ## Build
 
@@ -49,9 +66,6 @@ npm run build
 ```
 
 `npm run watch` rebuilds on every save. Output: `dist/arborum.js` (readable) and `dist/arborum.min.js`.
-
-To try a change on the live Webflow page before releasing, load `dist/arborum.min.js` in place of the
-jsDelivr file (for example with a browser override) and remove nothing else.
 
 ## Release
 
@@ -66,20 +80,10 @@ jsDelivr file (for example with a browser override) and remove nothing else.
 
 Always load a tagged version, never a branch, so the hash stays valid.
 
-## What stays in Webflow
-
-- Page layout and content, all classes and styles.
-- About page head: one CSS rule that hides the Home chapter marker (it has to be there before the page
-  draws).
-- Home page head: the Finsweet Attributes script from the template.
-
-Everything else (all scripts that used to sit in the page settings) is in this repo.
-
 ## Accessibility
 
-Everything respects the OS "reduce motion" setting: no smooth scrolling, the Energy section doesn't pin, nothing auto-plays, and
-pop-ups open without animation. Add `?motion=1` to the URL to force motion on for testing. Options,
-tabs and labels work with the keyboard (Tab, then Enter or Space); Escape closes a pop-up.
+Options, tabs, tower points and highlighted phrases work with the keyboard (Tab, then Enter or Space);
+Escape closes a pop-up. See above for the reduce-motion switch.
 
 ## Licences
 

@@ -1,8 +1,8 @@
 /* Gentle reveal: blocks fade up as they come into view (Home and About).
- * Add a class to REVEAL to include more blocks.
- * Styles: src/styles/base.css (.wf-rv)
+ * Add a class to REVEAL to include more blocks. Nothing is hidden until this script runs,
+ * so with the script off every block simply shows.
  */
-import { RM, $$ } from '../core/utils.js';
+import { RM, $$, play } from '../core/utils.js';
 
 const REVEAL = [
   // Home (the Energy text has its own stepped reveal in statement-energy.js)
@@ -14,6 +14,12 @@ const REVEAL = [
 
 export default function initReveal() {
   if (RM || !('IntersectionObserver' in window)) return;
-  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('wf-in'); io.unobserve(e.target) } }), { threshold: .12 });
-  $$(REVEAL.join(',')).forEach(el => { el.classList.add('wf-rv'); io.observe(el) });
+  const els = $$(REVEAL.join(',')).filter(el => el.getBoundingClientRect().top > innerHeight); // leave what is already on screen
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    io.unobserve(e.target);
+    play(e.target, [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], { duration: 800, easing: 'ease', fill: 'none' });
+    e.target.style.opacity = ''; e.target.style.transform = '';
+  }), { threshold: .12 });
+  els.forEach(el => { el.style.opacity = '0'; el.style.transform = 'translateY(18px)'; io.observe(el) });
 }

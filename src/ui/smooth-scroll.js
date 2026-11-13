@@ -6,8 +6,7 @@
  *      header "Beyond Energy" → the start of the Beyond Energy story
  *      footer links     → their section (also works when arriving from the About page)
  *  - The header chapter marker highlights the section you are in.
- * Off when the OS asks for reduced motion (links then jump).
- * Styles: src/styles/base.css (Lenis rules)
+ * The chapter marker style (brand blue, semibold) is set here because it follows the scroll.
  */
 import Lenis from 'lenis';
 import { RM, $, $$ } from '../core/utils.js';
@@ -34,6 +33,7 @@ export function scrollToY(y) {
 export default function initSmoothScroll() {
   if (!RM) {
     lenis = new Lenis({ lerp: .09, smoothWheel: true, wheelMultiplier: 1 });
+    document.documentElement.style.scrollBehavior = 'auto';
     // keep GSAP ScrollTrigger (loaded by the Webflow template) in step, if it is on the page
     if (window.ScrollTrigger) lenis.on('scroll', window.ScrollTrigger.update);
     (function raf(t) { lenis.raf(t); requestAnimationFrame(raf) })(performance.now());
@@ -67,7 +67,7 @@ export default function initSmoothScroll() {
     const ch = () => {
       const mk = innerHeight * .5, p = en.getBoundingClientRect(), b = be.getBoundingClientRect(), w = wo ? wo.getBoundingClientRect().top : 1e9;
       const c1 = p.top <= mk && b.top > mk, c2 = b.top <= mk && w > mk;
-      [c1, c2].forEach((on, k) => { if (!links[k]) return; links[k].classList.toggle('wf-on', on); links[k].toggleAttribute('aria-current', on) });
+      [c1, c2].forEach((on, k) => { if (!links[k]) return; links[k].style.color = on ? '#0071B1' : ''; links[k].style.fontWeight = on ? '600' : ''; links[k].toggleAttribute('aria-current', on) });
     };
     addEventListener('scroll', ch, { passive: true }); ch();
   }
