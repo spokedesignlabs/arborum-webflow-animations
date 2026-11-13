@@ -15,10 +15,11 @@
  *   #energy > .home-energy_stage    wraps .home-energy_photo, .home-energy_scrim, .home-energy_padding and:
  *     canvas.home-energy_threads, .home-energy_point ×3,
  *     .home-energy_card (> .home-energy_card-title, .home-energy_card-value ×3)
+ * Switch: frontierThreads (off: no threads; the pin, zoom, text and tower points stay).
  * The pin itself (section height, sticky stage, photo framing) is applied here, so with the script off
  * the Energy section is a normal full-screen section.
  */
-import { RM, $, $$, clamp, DPR, debounce, onLoad, canvasIn, play } from '../core/utils.js';
+import { RM, ON, $, $$, clamp, DPR, debounce, onLoad, canvasIn, play } from '../core/utils.js';
 import { makeTrigger } from '../ui/popups.js';
 
 // The photo is 1536×1024. Tower tops in photo pixels, with the card text for each.
@@ -110,8 +111,9 @@ export default function initStatementEnergy() {
   const setHot = on => { if (on === hotOn) return; hotOn = on; hots.forEach(b => { b.style.opacity = on ? '1' : ''; b.style.pointerEvents = on ? 'auto' : '' }) };
 
   // ---- Canvases ----
-  const tc = canvasIn(document, 'home-statement_threads'); // hero → statement
-  const sc = canvasIn(stage, 'home-energy_threads');       // on the photo
+  const threadsOn = ON('frontierThreads');
+  const tc = threadsOn ? canvasIn(document, 'home-statement_threads') : null; // hero → statement
+  const sc = threadsOn ? canvasIn(stage, 'home-energy_threads') : null;       // on the photo
   let tx = null, tW = 0, tH = 0, sx = null, cW = 0, cH = 0, threads = [], ENTRY = [], stageS = 0, stageE = 0, prog = 0;
 
   // a thread is a list of points with running lengths, so it can be drawn part of the way

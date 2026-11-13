@@ -47,3 +47,7 @@ export const canvasIn = (host, cls) => host && host.querySelector('canvas.' + cl
 
 // Short animation on an element (Web Animations API). The end state is kept.
 export function play(el, frames, opts) { if (!el || !el.animate) return null; return el.animate(frames, Object.assign({ fill: 'forwards' }, typeof opts === 'number' ? { duration: opts } : opts)) }
+
+// Per-animation switches, set in Webflow (Site settings > Custom code > Footer) as window.arborumAnimations.
+// Anything not listed, or the whole list missing, counts as on. Names: see README.
+export const ON = name => { const s = window.arborumAnimations; return !s || s[name] !== false };

@@ -2,13 +2,14 @@
  * Dotted globe with land, hub arcs and a pulse you can send by clicking. Drag to turn it.
  * Webflow elements: .section_home-hero > canvas.home-hero_globe (the globe; its colour blend, glow and
  *   opacity are Webflow styles), canvas.home-hero_dots (land dots), .home-hero_fade (soft fade at the bottom).
+ * Switch: heroGlobe (off: the hero shows its static globe picture from Webflow).
  * While it runs, the hero's static globe picture is swapped for the plain sky gradient the globe sits on.
  * Data: src/data/globe.json (land dots, hubs, arcs).
  */
-import {canvasIn,RM,$,$$,clamp,mix,rgba,rnd,setSeed,DPR,fit,visible,debounce,lift,NAVY,DEEP,LIGHT,CREAM,PEACH,VIO} from '../core/utils.js';
+import {ON,canvasIn,RM,$,$$,clamp,mix,rgba,rnd,setSeed,DPR,fit,visible,debounce,lift,NAVY,DEEP,LIGHT,CREAM,PEACH,VIO} from '../core/utils.js';
 import GD from '../data/globe.json';
 const route='home';
-export default function initHeroGlobe(){var heroEl=document.querySelector('.section_home-hero');if(!heroEl)return;
+export default function initHeroGlobe(){var heroEl=document.querySelector('.section_home-hero');if(!heroEl||!ON('heroGlobe'))return;
  heroEl.id=heroEl.id||'hero';if(getComputedStyle(heroEl).position==='static')heroEl.style.position='relative';
  heroEl.style.backgroundImage='linear-gradient(#005C96 0%,#0071B1 16%,#1A82C4 32%,#3E9FD8 48%,#5BB6EC 62%,#6DC2F2 70%,#A6CFEA 77%,#DCCFE0 83%,#F0CDBE 88%,#F4D3B6 93%,#F3F2EE 100%)';
  var cv=canvasIn(heroEl,'home-hero_globe');if(!cv)return;cv.id='globe';cv.setAttribute('aria-hidden','true');

@@ -2,11 +2,14 @@
  * A ripple network with ten options (Weather, Price, …) sitting on its nodes.
  *  - Click an option: a wave spreads from it across the network. Each other option is marked
  *    "Affected" at the moment the wave reaches it (nearest first), and an info window explains the option.
- *  - While nobody has clicked, a wave starts from one of the first four options every 3.6 seconds.
+ *  - On its own, it runs through the options one by one every 4 seconds with the same wave and "Affected"
+ *    tags (no info window). Clicking an option starts the 4 seconds again from that option.
+ *  - Phones show six options in their own spaced-out layout (TAGS_PHONE).
+ * Switch: worldModel (off: the static network picture and the options in their Webflow positions).
  * Webflow elements: .home-world_network > canvas.home-world_canvas, .home-world_chip ×10
  *   (each chip holds its label text and a .home-world_affected tag, which sits just above the chip)
  */
-import { RM, $, $$, clamp, debounce, visible, keyable, canvasIn, play } from '../core/utils.js';
+import { RM, ON, $, $$, clamp, debounce, visible, keyable, canvasIn, play } from '../core/utils.js';
 import Net from '../core/net.js';
 import { openWindow } from '../ui/popups.js';
 
@@ -28,6 +31,10 @@ const INFO = {
   Grievance: 'Every complaint is a signal about something real in the network. A high bill, a power cut or a dropped connection usually traces back to a specific event on the ground. The model links each grievance to that event, so customers get an answer based on facts.'
 };
 
+// Phones show six options (Webflow hides Policy, Fault, Asset and Grievance): two per row, three rows
+const TAGS_PHONE = { Weather: [.24, .24], Price: [.74, .2], Transmission: [.3, .52], Demand: [.76, .5], Market: [.24, .82], Storage: [.72, .8] };
+const AUTO_MS = 4000; // the automatic run moves to the next option this often; a click starts the count again
+
 // how an option looks in each state (its resting and hover looks are Webflow styles on .home-world_chip)
 const LOOK = {
   open: { backgroundColor: '#0071B1', color: '#fff', boxShadow: '0 0 0 4px rgba(109,194,242,.3)' },
@@ -40,9 +47,10 @@ const label = el => [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.
 export default function initWorldModel() {
   const pg = $('.home-world_network');
   const cv = canvasIn(pg, 'home-world_canvas');
-  if (!cv) return;
+  if (!cv || !ON('worldModel')) return;
   cv.setAttribute('aria-hidden', 'true');
-  pg.style.backgroundImage = 'none'; // the static network picture is only for when the script is off
+  pg.style.backgroundImage = 'none'; // the static network picture is only for when this animation is off
+  const phone = matchMedia('(max-width:767px)');
 
   // match Webflow chips to the option list by their text
   const chips = $$('.home-world_chip', pg);
@@ -52,6 +60,7 @@ export default function initWorldModel() {
     el.setAttribute('role', 'button'); el.setAttribute('aria-haspopup', 'dialog');
     Object.assign(el.style, { right: 'auto', bottom: 'auto', margin: '0', zIndex: '2', transform: 'translate(-50%,-140%)' });
   });
+  const shown = () => tagEls.filter(t => t.offsetParent !== null);
   function paint(el) { const s = el.__s; Object.assign(el.style, LOOK[s.open ? 'open' : s.on ? 'on' : s.hit ? 'hit' : 'rest']) }
   function state(el, k, v) { el.__s[k] = v; paint(el) }
 
@@ -60,14 +69,15 @@ export default function initWorldModel() {
     fade: (y, H) => clamp(Math.min(y, H - y) / (H * .14)),
     onBuild: (ns, W, H) => {
       tagEls.forEach(el => {
-        const t = TAGS.find(t => t[0] === el.__k), n = nearestIn(ns, W * t[1], H * t[2]);
+        const t = TAGS.find(t => t[0] === el.__k), pp = phone.matches && TAGS_PHONE[el.__k];
+        const n = nearestIn(ns, W * (pp ? pp[0] : t[1]), H * (pp ? pp[1] : t[2]));
         el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; el.__n = n;
       });
     }
   });
   function nearestIn(ns, x, y) { let b = ns[0], bd = 1e12; for (const n of ns) { const d = (n.x - x) ** 2 + (n.y - y) ** 2; if (d < bd) { bd = d; b = n } } return b }
 
-  let touched = false, tms = [];
+  let tms = [];
   // "Affected" appears on each option at the moment the wave reaches it (nearest first)
   function hit(t, on) {
     state(t, 'hit', on);
@@ -79,18 +89,25 @@ export default function initWorldModel() {
     tms.forEach(clearTimeout); tms = [];
     tagEls.forEach(t => hit(t, false));
     const x0 = parseFloat(b.style.left), y0 = parseFloat(b.style.top);
-    tagEls.forEach(t => {
-      if (t === b || t.offsetParent === null) return;
+    shown().forEach(t => {
+      if (t === b) return;
       const d = Math.hypot(parseFloat(t.style.left) - x0, parseFloat(t.style.top) - y0), ms = RM ? 0 : d / SPEED * 1000;
       tms.push(setTimeout(() => hit(t, true), ms));
       tms.push(setTimeout(() => hit(t, false), ms + 2200));
     });
   }
-  function tap(el) {
-    touched = true;
+  // one wave from an option: the option lights up, the wave spreads, the others are marked "Affected"
+  function wave(el) {
     tagEls.forEach(e => state(e, 'on', e === el));
     if (el.__n) wm.ripple(el.__n.x, el.__n.y, 6);
     affect(el);
+  }
+
+  // automatic run: every AUTO_MS it moves to the next option; a click restarts the count from that option
+  let wmVis = false, nextAt = performance.now() + 1200, idx = -1;
+  function tap(el) {
+    wave(el);
+    idx = shown().indexOf(el); nextAt = performance.now() + AUTO_MS;
     state(el, 'open', true);
     openWindow(el, { t: el.__k, p: INFO[el.__k] || '' }, { wide: true, width: 520, align: 'center', step: 450, onClose: t => state(t, 'open', false) });
   }
@@ -98,19 +115,18 @@ export default function initWorldModel() {
     el.addEventListener('click', e => { e.stopPropagation(); tap(el) });
     keyable(el, () => tap(el));
   });
-
-  // until someone clicks, a wave starts from one of the first four options every 3.6 seconds
-  let wmVis = false, idx = 2;
-  visible(pg, v => { wmVis = v; wm.run(v) });
+  visible(pg, v => { wmVis = v; wm.run(v); if (v) nextAt = Math.max(nextAt, performance.now() + 600) });
   setInterval(() => {
-    if (!wmVis || touched || document.hidden || RM) return;
-    const el = tagEls[idx]; if (!el || !el.__n) return;
-    tagEls.forEach((e, k) => state(e, 'on', k === idx));
-    wm.ripple(el.__n.x, el.__n.y, 5);
-    idx = (idx + 1) % 4;
-  }, 3600);
+    if (!wmVis || document.hidden || RM || performance.now() < nextAt) return;
+    if (tagEls.some(e => e.__s.open)) { nextAt = performance.now() + AUTO_MS; return } // leave an open info window alone
+    const list = shown(); if (!list.length) return;
+    idx = (idx + 1) % list.length;
+    if (list[idx].__n) wave(list[idx]);
+    nextAt = performance.now() + AUTO_MS;
+  }, 200);
 
   wm.build();
   addEventListener('resize', debounce(() => wm.build()));
+  phone.addEventListener('change', () => wm.build());
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => wm.build());
 }

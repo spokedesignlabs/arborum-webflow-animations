@@ -4,25 +4,23 @@
  *    a flat channel (Energy) -> a tunnel (Telecom) -> a constellation (Other networks). The background tint follows.
  *  - Copy: the heading and paragraph change at 34% and 67% of the way through, with a short fade.
  *  - The three network labels (Energy, Telecom, Other networks) highlight with the copy. They are labels, not links.
- *  - The heading phrase (.home-beyond_trigger inside the h3) opens the "One change moves every network" window.
+ *  - The heading and paragraph text change with the network (no pop-up).
+ * Switch: beyondEnergy (off: no network canvas; the copy still changes as you scroll).
  * Webflow elements: #beyond > .home-beyond_sticky > canvas.home-beyond_canvas,
  *   .home-beyond_copy (h3 > .home-beyond_trigger, p), .home-beyond_net
  */
-import {RM,$,$$,clamp,mix,rgba,rnd,setSeed,fit,visible,debounce,lift,canvasIn,NAVY,DEEP,VIO} from '../core/utils.js';
-import {makeTrigger} from '../ui/popups.js';
+import {RM,ON,$,$$,clamp,mix,rgba,rnd,setSeed,fit,visible,debounce,lift,canvasIn,NAVY,DEEP,VIO} from '../core/utils.js';
 
 const COPY=[['Different networks. Endless possibilities.','The world’s most critical systems — telecom, finance, logistics and beyond — are complex networks of interconnected systems. We are extending World Model beyond energy to understand them, anticipate problems and discover better solutions.'],
  ['Understanding networks. Improving how they operate.','We are extending our World Models to telecom networks, spanning infrastructure asset management and network operations. By modelling how interconnected network components behave, we aim to help operators make better decisions across increasingly complex and distributed systems.'],
  ['A world model for every complex network.','From data centres to logistics and other critical infrastructure, we see an opportunity to apply the same underlying technology to systems where multiple assets, constraints and decisions interact. We are building towards a future where complex networks can be modelled, simulated and optimised through a common intelligence layer.']];
 const STEPS=[.34,.67]; // where the copy changes, as a share of the pinned scroll
-const NETWORKS={k:'Different networks. Endless possibilities.',t:'One change moves every network',p:'Energy, telecom and markets look separate. In practice a decision in one moves the others, so they have to be understood together.',l:['A heatwave hits the city','Power demand rises','Telecom sites draw more power','Prices move across the market']};
 
 /* ---- Copy, labels and the info window ---- */
 function initCopy(bs){
  const copy=bs.querySelector('.home-beyond_copy'),h3=copy&&copy.querySelector('h3'),pp=copy&&copy.querySelector('p'),nets=$$('.home-beyond_net:not(.is-arrow)',bs);
- const trig=copy&&(copy.querySelector('.home-beyond_trigger')||h3);
+ const trig=copy&&(copy.querySelector('.home-beyond_trigger')||h3); // the heading text
  let cur=-1,tm;
- if(trig)makeTrigger(trig,NETWORKS,{width:440});
  if(copy)copy.style.transition='opacity .28s ease,transform .28s ease';
  function set(i){if(i===cur)return;const first=cur<0;cur=i;nets.forEach((n,k)=>n.classList.toggle('is-active',k===i));if(first||!copy)return;
   copy.style.opacity='0';copy.style.transform='translateY(6px)';clearTimeout(tm);tm=setTimeout(()=>{trig.textContent=COPY[i][0];pp.textContent=COPY[i][1];copy.style.opacity='';copy.style.transform=''},RM?0:260)}
@@ -63,4 +61,4 @@ visible(mc,v=>mOn=v);
  buildMorph();addEventListener('resize',debounce(buildMorph));
 }
 
-export default function initBeyondEnergy(){const bs=document.getElementById('beyond');if(!bs)return;initCopy(bs);initMorph()}
+export default function initBeyondEnergy(){const bs=document.getElementById('beyond');if(!bs)return;initCopy(bs);if(ON('beyondEnergy'))initMorph()}

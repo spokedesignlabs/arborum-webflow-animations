@@ -2,9 +2,10 @@
  * When the section comes into view, curved lines draw in from each dependency (left) to "One World Model",
  * then out to each decision (right). Small dots keep travelling along them. Hover an item to highlight
  * its line. Desktop and tablet only (not on phones).
+ * Switch: oneWorldModel (off: no lines; the two lists and the title stay).
  * Webflow elements: .home-owm_component > canvas.home-owm_lines, .home-owm_list ×2 (.home-owm_item), .home-owm_title
  */
-import { RM, $, $$, clamp, DPR, debounce, onLoad, canvasIn } from '../core/utils.js';
+import { RM, ON, $, $$, clamp, DPR, debounce, onLoad, canvasIn } from '../core/utils.js';
 
 const IN = '#0071B1', OUT = '#6DC2F2';
 const DRAW_MS = 1300, STAGGER_MS = 70, OUT_DELAY_MS = 900; // how the lines draw in
@@ -13,7 +14,7 @@ const DOT_MS = 3200; // one trip of a dot along its line
 export default function initOneWorldModel() {
   const dep = $('.home-owm_component');
   const cv = canvasIn(dep, 'home-owm_lines');
-  if (!cv) return;
+  if (!cv || !ON('oneWorldModel')) return;
   const lists = $$('.home-owm_list', dep), title = $('.home-owm_title', dep);
   if (lists.length < 2 || !title) return;
   cv.setAttribute('aria-hidden', 'true');
