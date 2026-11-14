@@ -36,20 +36,28 @@ export default function initOneWorldModel() {
   }
   const at = (c, d) => { for (let i = 1; i < c.pts.length; i++) if (c.pts[i][2] >= d) { const a = c.pts[i - 1], b = c.pts[i], k = (d - a[2]) / (b[2] - a[2] || 1); return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k] } return c.pts[c.pts.length - 1] };
 
+  // Where an item really sits. The page's reveal slides text up 16px as it fades in, and the lines are measured
+  // before that, so the slide is taken out here (otherwise the lines end 16px off and run into the words).
+  function box(el) {
+    const b = el.getBoundingClientRect(), t = getComputedStyle(el).transform;
+    if (!t || t === 'none') return b;
+    const m = new DOMMatrixReadOnly(t), l = b.left - m.e, tp = b.top - m.f;
+    return { left: l, top: tp, right: l + b.width, bottom: tp + b.height, width: b.width, height: b.height };
+  }
   function build() {
     const r = dep.getBoundingClientRect();
     lines = []; W = r.width; H = r.height;
     cv.width = W * DPR; cv.height = H * DPR; x = cv.getContext('2d'); x.setTransform(DPR, 0, 0, DPR, 0, 0);
     if (!W) return;
-    const ct = title.getBoundingClientRect(), cy = ct.top - r.top + ct.height / 2, lx = ct.left - r.left - 18, rx = ct.right - r.left + 18;
+    const ct = box(title), cy = ct.top - r.top + ct.height / 2, lx = ct.left - r.left - 18, rx = ct.right - r.left + 18;
     if (innerWidth < 768) { // phones: top list → title → bottom list
       const cx = ct.left - r.left + ct.width / 2, ty = ct.top - r.top - 10, by = ct.bottom - r.top + 10;
-      $$('.home-owm_item', lists[0]).forEach((s, i) => { const b = s.getBoundingClientRect(); lines.push({ el: s, c: curve(b.left - r.left + b.width / 2, b.bottom - r.top + 6, cx, ty, true), col: IN, i, side: 0 }) });
-      $$('.home-owm_item', lists[1]).forEach((s, i) => { const b = s.getBoundingClientRect(); lines.push({ el: s, c: curve(cx, by, b.left - r.left + b.width / 2, b.top - r.top - 6, true), col: OUT, i, side: 1 }) });
+      $$('.home-owm_item', lists[0]).forEach((s, i) => { const b = box(s); lines.push({ el: s, c: curve(b.left - r.left + b.width / 2, b.bottom - r.top + 6, cx, ty, true), col: IN, i, side: 0 }) });
+      $$('.home-owm_item', lists[1]).forEach((s, i) => { const b = box(s); lines.push({ el: s, c: curve(cx, by, b.left - r.left + b.width / 2, b.top - r.top - 6, true), col: OUT, i, side: 1 }) });
       kick(); return;
     }
-    $$('.home-owm_item', lists[0]).forEach((s, i) => { const b = s.getBoundingClientRect(); lines.push({ el: s, c: curve(b.right - r.left + 14, b.top - r.top + b.height / 2, lx, cy), col: IN, i, side: 0 }) });
-    $$('.home-owm_item', lists[1]).forEach((s, i) => { const b = s.getBoundingClientRect(); lines.push({ el: s, c: curve(rx, cy, b.left - r.left - 14, b.top - r.top + b.height / 2), col: OUT, i, side: 1 }) });
+    $$('.home-owm_item', lists[0]).forEach((s, i) => { const b = box(s); lines.push({ el: s, c: curve(b.right - r.left + 14, b.top - r.top + b.height / 2, lx, cy), col: IN, i, side: 0 }) });
+    $$('.home-owm_item', lists[1]).forEach((s, i) => { const b = box(s); lines.push({ el: s, c: curve(rx, cy, b.left - r.left - 14, b.top - r.top + b.height / 2), col: OUT, i, side: 1 }) });
     lines.forEach((l, k) => { l.el.onmouseenter = () => { hot = k; kick() }; l.el.onmouseleave = () => { hot = -1; kick() } });
     kick();
   }
@@ -88,4 +96,5 @@ export default function initOneWorldModel() {
   else { on = true; seenAt = 1 }
   onLoad(build, 100);
   addEventListener('resize', debounce(build));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(build); // the web font can change the item widths
 }

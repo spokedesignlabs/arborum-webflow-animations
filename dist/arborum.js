@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.6 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.7 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2287,6 +2287,12 @@
       }
       return c.pts[c.pts.length - 1];
     };
+    function box(el) {
+      const b = el.getBoundingClientRect(), t = getComputedStyle(el).transform;
+      if (!t || t === "none") return b;
+      const m = new DOMMatrixReadOnly(t), l = b.left - m.e, tp = b.top - m.f;
+      return { left: l, top: tp, right: l + b.width, bottom: tp + b.height, width: b.width, height: b.height };
+    }
     function build() {
       const r = dep.getBoundingClientRect();
       lines = [];
@@ -2297,26 +2303,26 @@
       x = cv.getContext("2d");
       x.setTransform(DPR, 0, 0, DPR, 0, 0);
       if (!W) return;
-      const ct = title.getBoundingClientRect(), cy = ct.top - r.top + ct.height / 2, lx = ct.left - r.left - 18, rx = ct.right - r.left + 18;
+      const ct = box(title), cy = ct.top - r.top + ct.height / 2, lx = ct.left - r.left - 18, rx = ct.right - r.left + 18;
       if (innerWidth < 768) {
         const cx = ct.left - r.left + ct.width / 2, ty = ct.top - r.top - 10, by = ct.bottom - r.top + 10;
         $$(".home-owm_item", lists[0]).forEach((s, i) => {
-          const b = s.getBoundingClientRect();
+          const b = box(s);
           lines.push({ el: s, c: curve(b.left - r.left + b.width / 2, b.bottom - r.top + 6, cx, ty, true), col: IN2, i, side: 0 });
         });
         $$(".home-owm_item", lists[1]).forEach((s, i) => {
-          const b = s.getBoundingClientRect();
+          const b = box(s);
           lines.push({ el: s, c: curve(cx, by, b.left - r.left + b.width / 2, b.top - r.top - 6, true), col: OUT2, i, side: 1 });
         });
         kick();
         return;
       }
       $$(".home-owm_item", lists[0]).forEach((s, i) => {
-        const b = s.getBoundingClientRect();
+        const b = box(s);
         lines.push({ el: s, c: curve(b.right - r.left + 14, b.top - r.top + b.height / 2, lx, cy), col: IN2, i, side: 0 });
       });
       $$(".home-owm_item", lists[1]).forEach((s, i) => {
-        const b = s.getBoundingClientRect();
+        const b = box(s);
         lines.push({ el: s, c: curve(rx, cy, b.left - r.left - 14, b.top - r.top + b.height / 2), col: OUT2, i, side: 1 });
       });
       lines.forEach((l, k) => {
@@ -2393,6 +2399,7 @@
     }
     onLoad(build, 100);
     addEventListener("resize", debounce2(build));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(build);
   }
 
   // src/sections/use-cases.js
@@ -3266,7 +3273,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.6";
+    window.__arborumAnim = "1.4.7";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],
