@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.3.0 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.0 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -996,7 +996,6 @@
   var NAVY = [5, 19, 28];
   var DEEP = [0, 113, 177];
   var LIGHT = [109, 194, 242];
-  var PEACH = [242, 191, 149];
   var VIO = [0, 113, 177];
   var mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
   var rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
@@ -1063,9 +1062,11 @@
     const s = window.arborumAnimations;
     return !s || s[name] !== false;
   };
+  var EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
   // src/ui/smooth-scroll.js
   var lenis = null;
+  var getLenis = () => lenis;
   function targetY(hash) {
     const el = hash && document.getElementById(hash.slice(1));
     if (!el) return null;
@@ -1121,9 +1122,12 @@
         const c1 = p.top <= mk && b.top > mk, c2 = b.top <= mk && w > mk;
         [c1, c2].forEach((on, k) => {
           if (!links[k]) return;
-          links[k].style.color = on ? "#0071B1" : "";
-          links[k].style.fontWeight = on ? "600" : "";
-          links[k].toggleAttribute("aria-current", on);
+          const l = links[k];
+          l.style.color = on ? "#0071B1" : "";
+          l.style.fontWeight = on ? "600" : "";
+          l.style.setProperty("background-size", on ? "100% 1.5px" : "", on ? "important" : "");
+          l.style.setProperty("background-position", on ? "0% 100%" : "", on ? "important" : "");
+          l.toggleAttribute("aria-current", on);
         });
       };
       addEventListener("scroll", ch, { passive: true });
@@ -1218,13 +1222,17 @@
     dw.style.left = x + "px";
     dw.style.top = y + "px";
     const h = dw.offsetHeight;
-    if (y + h > innerHeight - 16) {
+    const above = y + h > innerHeight - 16;
+    if (above) {
       y = Math.max(16, r.top - h - 14);
       dw.style.top = y + "px";
     }
     if (!RM) {
-      play(dw, [{ opacity: 0, transform: "translateY(8px) scale(.98)", clipPath: "inset(0 0 100% 0)" }, { opacity: 1, transform: "none", clipPath: "inset(0 0 0 0)" }], { duration: 450, easing: "cubic-bezier(.2,.7,.2,1)" });
-      play($(".popup_scan", dw), [{ top: "0%", opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 1, offset: 0.9 }, { top: "100%", opacity: 0 }], { duration: 1e3, easing: "ease-out" });
+      const ox = clamp2((r.left + r.width / 2 - x) / w * 100, 0, 100).toFixed(1) + "%";
+      dw.style.transformOrigin = ox + (above ? " 100%" : " 0%");
+      play(dw, [{ opacity: 0, transform: `translateY(${above ? -6 : 6}px) scale(.97)` }, { opacity: 1, transform: "none" }], { duration: 220, easing: EASE_OUT });
+      const scan = $(".popup_scan", dw);
+      play(scan, [{ transform: "translateY(0)", opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 1, offset: 0.9 }, { transform: `translateY(${h}px)`, opacity: 0 }], { duration: 700, easing: EASE_OUT });
     }
     const shown = steps.slice(0, list.length);
     if (RM) {
@@ -1257,7 +1265,7 @@
     el.setAttribute("aria-expanded", "false");
     if (!el.hasAttribute("tabindex")) el.tabIndex = 0;
     const on = (v) => {
-      el.style.backgroundSize = v ? "100% 100%" : "";
+      el.style.setProperty("background-size", v ? "100% 2px, 100% 1px" : "", v ? "important" : "");
     };
     const open = (e) => {
       e && e.stopPropagation();
@@ -1306,129 +1314,144 @@
   }
 
   // src/ui/buttons.js
-  var BTN = ".button";
-  var LINK = ".header_link,.header_chapter-link,.footer_link";
-  var GLOW = (x, y) => `radial-gradient(150px 110px at ${x}px ${y}px,#F2BF95,#E6D5B7 42%,#6DC2F2 100%)`;
-  var TEXT_GLOW = (x, light) => light ? `radial-gradient(70px 44px at ${x}px 50%,#F2BF95,#E6D5B7 42%,#fff 130%)` : `radial-gradient(70px 44px at ${x}px 50%,#0071B1,#2E9BDA 60%,#05131C 130%)`;
   function brackets(btn, on) {
     const bs = btn.querySelectorAll(".button_bracket");
     const col = on ? btn.classList.contains("is-on-dark") ? "#E6D5B7" : "#0071B1" : "";
     bs.forEach((b) => {
-      b.style.transition = "transform .35s cubic-bezier(.2,.7,.2,1),border-color .3s";
+      b.style.transition = on ? "transform 200ms cubic-bezier(0.23, 1, 0.32, 1),border-color 200ms ease" : "transform 160ms cubic-bezier(0.23, 1, 0.32, 1),border-color 160ms ease";
       b.style.transform = on ? `translateX(${b.classList.contains("is-right") ? 5 : -5}px)` : "";
       b.style.borderColor = col;
     });
-    return bs.length > 0;
   }
   function initButtons() {
-    const enter = (el) => {
-      if (el.matches(BTN)) {
-        if (!brackets(el, true)) el.__solid = true;
-      } else {
-        el.style.webkitBackgroundClip = el.style.backgroundClip = "text";
-        el.style.color = "transparent";
-      }
-    };
-    const leave = (el) => {
-      if (el.matches(BTN)) {
-        brackets(el, false);
-        el.style.backgroundImage = "";
-      } else {
-        el.style.backgroundImage = "";
-        el.style.color = "";
-        el.style.webkitBackgroundClip = el.style.backgroundClip = "";
-      }
-    };
-    const move = (el, e) => {
-      const r = el.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-      if (el.matches(BTN)) {
-        if (el.__solid) el.style.backgroundImage = GLOW(x, y);
-      } else el.style.backgroundImage = TEXT_GLOW(x, el.matches(".footer_link"));
-    };
-    document.querySelectorAll(BTN + "," + LINK).forEach((el) => {
-      el.addEventListener("pointerenter", (e) => {
-        enter(el);
-        move(el, e);
-      });
-      el.addEventListener("pointermove", (e) => move(el, e), { passive: true });
-      el.addEventListener("pointerleave", () => leave(el));
-      el.addEventListener("focus", () => {
-        if (el.matches(BTN)) brackets(el, true);
-      });
-      el.addEventListener("blur", () => leave(el));
+    document.querySelectorAll(".button").forEach((el) => {
+      if (!el.querySelector(".button_bracket")) return;
+      el.addEventListener("pointerenter", () => brackets(el, true));
+      el.addEventListener("pointerleave", () => brackets(el, false));
+      el.addEventListener("focus", () => brackets(el, true));
+      el.addEventListener("blur", () => brackets(el, false));
     });
   }
 
   // src/ui/reveal.js
+  var MOVE = 16;
+  var DURATION = 700;
+  var STAGGER = 60;
+  var EASE = "cubic-bezier(0.23, 1, 0.32, 1)";
   var REVEAL = [
-    // Home (the Energy text has its own stepped reveal in statement-energy.js)
-    ".home-statement_component",
-    ".home-owm_component",
-    ".home-usecases_component",
-    ".home-world_heading",
-    ".home-world_steps",
-    ".home-world_ctas",
+    // Home
+    [".home-statement_component", false],
+    [".home-owm_list", true],
+    [".home-owm_title", false],
+    [".home-usecases_heading", false],
+    [".home-usecases_body", false],
+    [".home-world_heading", true],
+    [".home-world_steps", true],
+    [".home-world_ctas", true],
     // About
-    ".about-block_component",
-    ".about-partners_component"
+    [".about-block_heading", true],
+    [".about-block_copy", true],
+    [".about-partners_heading", true],
+    [".about-partners_grid", true],
+    // Both pages
+    [".footer_top", false],
+    [".footer_bottom", false]
   ];
   function initReveal() {
     if (RM || !("IntersectionObserver" in window)) return;
-    const els = $$(REVEAL.join(",")).filter((el) => el.getBoundingClientRect().top > innerHeight);
+    const items = [];
+    REVEAL.forEach(([sel, group]) => $$(sel).forEach((el) => {
+      if (group) [...el.children].forEach((ch, i) => items.push([ch, i * STAGGER]));
+      else items.push([el, 0]);
+    }));
     const io = new IntersectionObserver((es) => es.forEach((e) => {
       if (!e.isIntersecting) return;
       io.unobserve(e.target);
-      play(e.target, [{ opacity: 0, transform: "translateY(18px)" }, { opacity: 1, transform: "none" }], { duration: 800, easing: "ease", fill: "none" });
-      e.target.style.opacity = "";
-      e.target.style.transform = "";
-    }), { threshold: 0.12 });
-    els.forEach((el) => {
+      const el = e.target, delay = el.__rvDelay || 0;
+      el.style.transition = `opacity ${DURATION}ms ${EASE} ${delay}ms, transform ${DURATION}ms ${EASE} ${delay}ms`;
+      el.style.opacity = "1";
+      el.style.transform = "none";
+      setTimeout(() => {
+        el.style.transition = "";
+        el.style.opacity = "";
+        el.style.transform = "";
+      }, DURATION + delay + 50);
+    }), { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+    items.forEach(([el, delay]) => {
+      if (el.__rvDelay !== void 0) return;
+      el.__rvDelay = delay;
       el.style.opacity = "0";
-      el.style.transform = "translateY(18px)";
+      el.style.transform = `translateY(${MOVE}px)`;
       io.observe(el);
     });
   }
 
   // src/ui/header.js
   var SHOW_AFTER = 140;
+  var IN = "transform 300ms cubic-bezier(0.32, 0.72, 0, 1)";
+  var OUT = "transform 200ms cubic-bezier(0.23, 1, 0.32, 1)";
   function initHeader() {
     const left = $(".header_component .header_left");
     if (!left) return;
+    const chapter2 = $(".header_component .header_chapter");
     const logo = $(".header_logo", left), div = $(".header_divider", left), link = $(".header_link", left);
     const phone = matchMedia("(max-width:767px)");
-    let bar = false, shown = false, lastY = scrollY;
+    let bar = false, shown = true, lastY = scrollY;
+    const pillH = () => chapter2 && chapter2.offsetHeight || (phone.matches ? 32 : 40);
     function setBar(on) {
       if (on === bar) return;
       bar = on;
       if (on) {
+        const h = pillH();
         Object.assign(left.style, {
           position: "fixed",
           top: phone.matches ? "16px" : "20px",
-          left: phone.matches ? "16px" : "24px",
+          left: "var(--nav-inset, 24px)",
           zIndex: "61",
-          padding: phone.matches ? "6px 10px" : "8px 14px",
+          height: h + "px",
+          boxSizing: "border-box",
+          padding: phone.matches ? "0 10px" : "0 14px",
           backgroundColor: "rgba(255,255,255,.92)",
           border: "1px solid rgba(5,19,28,.14)",
           transform: "translateY(-160%)",
           transition: "none"
         });
-        if (logo) logo.style.filter = "brightness(0)";
+        if (logo) {
+          logo.style.filter = "brightness(0)";
+          logo.style.height = Math.round(h * 0.5) + "px";
+          logo.style.width = "auto";
+        }
         if (div) div.style.backgroundColor = "rgba(5,19,28,.2)";
         if (link) link.style.color = "#05131C";
-        void left.offsetWidth;
-        left.style.transition = "transform .35s cubic-bezier(.2,.7,.2,1)";
+        if (chapter2) {
+          chapter2.style.transition = OUT;
+          chapter2.style.transform = "translateY(-160%)";
+        }
+        shown = false;
       } else {
-        ["position", "top", "left", "zIndex", "padding", "backgroundColor", "border", "transform", "transition"].forEach((k) => left.style[k] = "");
-        if (logo) logo.style.filter = "";
+        ["position", "top", "left", "zIndex", "height", "boxSizing", "padding", "backgroundColor", "border", "transform", "transition"].forEach((k) => left.style[k] = "");
+        if (logo) {
+          logo.style.filter = "";
+          logo.style.height = "";
+          logo.style.width = "";
+        }
         if (div) div.style.backgroundColor = "";
         if (link) link.style.color = "";
-        shown = false;
+        if (chapter2) {
+          chapter2.style.transition = IN;
+          chapter2.style.transform = "";
+        }
+        shown = true;
       }
     }
     function show(on) {
       if (on === shown) return;
       shown = on;
-      left.style.transform = on ? "none" : "translateY(-160%)";
+      [left, chapter2].forEach((el) => {
+        if (!el) return;
+        el.style.transition = on ? IN : OUT;
+        el.style.transform = on ? "none" : "translateY(-160%)";
+      });
     }
     addEventListener("scroll", () => {
       const y = scrollY, dy = y - lastY;
@@ -1440,6 +1463,19 @@
       setBar(true);
       if (Math.abs(dy) > 2) show(dy < 0);
     }, { passive: true });
+    const inset = () => {
+      const grid = [...document.querySelectorAll("main .padding-global .container-large")].find((c) => c.offsetWidth > 0);
+      if (grid) document.documentElement.style.setProperty("--nav-inset", Math.round(grid.getBoundingClientRect().left) + "px");
+    };
+    inset();
+    addEventListener("resize", () => {
+      inset();
+      if (bar) {
+        setBar(false);
+        setBar(true);
+        show(true);
+      }
+    });
   }
 
   // src/data/globe.json
@@ -1602,8 +1638,7 @@
           const ang = Math.acos(clamp2(vx * wv[0] + vy * wv[1] + vz * wv[2], -1, 1));
           b = (Math.exp(-(((ang - rr) / 0.1) ** 2)) + Math.exp(-((ang / 0.12) ** 2)) * Math.max(0, 1 - age * 0.55)) * amp;
         }
-        if (b > 0.04) hot.push([px, py, zz, b]);
-        else buckets[Math.min(3, zz * 5 | 0)].push(px, py, zz);
+        buckets[Math.min(3, zz * 5 | 0)].push(px, py, zz);
       }
       buckets.forEach((a, k) => {
         const x2 = FX;
@@ -1616,12 +1651,13 @@
         }
         x2.fill();
       });
+      const F = FX, SIG = [77, 173, 255], NAVYL = "rgba(5,19,28,", WHITE = [255, 255, 255];
       for (const h of hot) {
-        const r = (0.74 + 0.5 * h[2]) * sc * (1 + 0.6 * clamp2(h[3]));
-        x.fillStyle = rgba(mix([255, 255, 255], PEACH, clamp2(h[3] * 1.2)), clamp2(0.6 + h[3]));
-        x.beginPath();
-        x.arc(h[0], h[1], r, 0, 6.283);
-        x.fill();
+        const r = (1 + 0.8 * h[2]) * sc * (1 + 0.35 * clamp2(h[3]));
+        F.fillStyle = rgba(mix([200, 232, 250], SIG, clamp2(h[3] * 1.1)), 0.95);
+        F.beginPath();
+        F.arc(h[0], h[1], r, 0, 6.283);
+        F.fill();
       }
       x.lineWidth = 0.7;
       x.strokeStyle = "rgba(255,255,255,.13)";
@@ -1639,164 +1675,181 @@
         }
       }
       x.stroke();
-      x.lineWidth = 2 * sc;
-      x.lineCap = "round";
-      const AR = window.__arcR == null ? 1 : window.__arcR, AO = window.__arcO, ad = (p) => AO ? Math.acos(Math.max(-1, Math.min(1, (p[0] * AO[0] + p[1] * AO[1] + p[2] * AO[2]) / (Math.hypot(p[0], p[1], p[2]) || 1)))) / Math.PI : 0;
-      if (AR > 0) ARCS.forEach((e, k) => {
-        if (wave && w.lv) {
-          const lv2 = Math.min(w.lv[e.i], w.lv[e.j]);
-          if (lv2 < 99 && age > 0.15 + lv2 * 0.62 && age < 0.15 + lv2 * 0.62 + 3.4) return;
-        }
-        const n = e.pts.length, d0 = ad(e.pts[0]), d1 = ad(e.pts[n - 1]), rev = d1 < d0, lim = Math.ceil(n * Math.min(1, Math.max(0, (AR * 2.4 - Math.min(d0, d1) * 1.4 - (AO ? 0 : k * 0.03)) * 1.5)));
-        x.beginPath();
-        let up = false;
-        const P2 = rev ? e.pts.slice().reverse() : e.pts;
-        for (const p of P2.slice(0, lim)) {
-          proj(p, o);
-          if (o[2] <= 0.05) {
-            up = false;
-            continue;
-          }
-          up ? x.lineTo(o[0], o[1]) : x.moveTo(o[0], o[1]);
-          up = true;
-        }
-        x.strokeStyle = rgba([255, 255, 255], 0.4);
-        x.stroke();
-      });
-      x = FX;
-      ARCS.forEach((e, k) => {
-        if (k % 2 || AR < 1) return;
-        const n = e.pts.length - 1, u = (t / 4200 + k * 0.37) % 1, p = e.pts[Math.round(u * n)];
-        proj(p, o);
-        if (o[2] <= 0.02) return;
-        x.fillStyle = rgba([240, 176, 124], 0.85 * Math.sin(u * Math.PI));
-        x.beginPath();
-        x.arc(o[0], o[1], 2.8 * sc, 0, 6.283);
-        x.fill();
-      });
-      if (wave) {
-        const v0 = w.v, nh = HV.map((h, i) => [i, dot(h, v0)]).sort((p, q) => q[1] - p[1]).slice(0, 4), sq = clamp2(age / 0.55), sf = Math.max(0, 1 - Math.max(0, age - 2.4) / 1.6);
-        if (sf > 0) nh.forEach(([i], k) => {
-          const h = HV[i], c = clamp2(dot(h, v0), -1, 1), om = Math.acos(c);
-          if (om < 1e-3) return;
-          const so = Math.sin(om), qq = clamp2(sq * 1.3 - k * 0.1);
-          if (qq <= 0) return;
-          x.beginPath();
-          let up = false, hx = null, hy = null;
-          for (let m = 0; m <= 24 * qq; m++) {
-            const t2 = m / 24, a1 = Math.sin((1 - t2) * om) / so, a2 = Math.sin(t2 * om) / so;
-            proj([v0[0] * a1 + h[0] * a2, v0[1] * a1 + h[1] * a2, v0[2] * a1 + h[2] * a2], o);
-            if (o[2] <= 0) {
-              up = false;
-              continue;
-            }
-            up ? x.lineTo(o[0], o[1]) : x.moveTo(o[0], o[1]);
-            up = true;
-            hx = o[0];
-            hy = o[1];
-          }
-          x.lineWidth = 1.1 * sc;
-          x.strokeStyle = rgba([240, 176, 124], 0.75 * sf);
-          x.shadowColor = "rgba(242,191,149,.4)";
-          x.shadowBlur = 3;
-          x.stroke();
-          x.shadowBlur = 0;
-          if (hx != null && qq >= 1) {
-            x.fillStyle = rgba([240, 176, 124], sf);
-            x.beginPath();
-            x.arc(hx, hy, 3.2 * sc, 0, 6.283);
-            x.fill();
-          }
-        });
+      const AR = window.__arcR == null ? 1 : window.__arcR;
+      const yT = gCy - gR, span = Math.max(1, gH - yT), DEEP2 = [0, 113, 177];
+      const LG = (a) => {
+        const c1 = mix([46, 155, 218], WHITE, fvG), c2 = mix(DEEP2, WHITE, fvG), g = F.createLinearGradient(0, yT, 0, gH);
+        g.addColorStop(0, "rgba(255,255,255," + a + ")");
+        g.addColorStop(0.3, "rgba(255,255,255," + a + ")");
+        g.addColorStop(0.58, rgba(c1, a));
+        g.addColorStop(1, rgba(c2, a));
+        return g;
+      };
+      const CASE = (a) => {
+        if (fvG > 0.5) return NAVYL + a + ")";
+        const g = F.createLinearGradient(0, yT, 0, gH);
+        g.addColorStop(0, NAVYL + a + ")");
+        g.addColorStop(0.45, NAVYL + a * 0.6 + ")");
+        g.addColorStop(0.7, "rgba(255,255,255," + a * 1.6 + ")");
+        g.addColorStop(1, "rgba(255,255,255," + a * 1.6 + ")");
+        return g;
+      };
+      const tint = (y) => {
+        const k = clamp2(((y - yT) / span - 0.3) / 0.4) * (1 - fvG);
+        return mix(WHITE, DEEP2, k * k * (3 - 2 * k));
+      };
+      const fvG = w ? clamp2(age / 0.35) * (1 - clamp2((age - 2.9) / 1.3)) : 0;
+      const fv = w ? clamp2(age / 0.35) * (1 - clamp2((age - 2.9) / 1.3)) : 0;
+      if (fv > 0) {
+        const vg = F.createRadialGradient(gCx, gCy - gR * 0.6, gR * 0.1, gCx, gCy, gR);
+        vg.addColorStop(0, "rgba(0,113,177," + 0.5 * fv + ")");
+        vg.addColorStop(0.7, "rgba(0,92,150," + 0.6 * fv + ")");
+        vg.addColorStop(1, "rgba(0,73,122," + 0.68 * fv + ")");
+        F.fillStyle = vg;
+        F.beginPath();
+        F.arc(gCx, gCy, gR, 0, 6.283);
+        F.fill();
       }
-      if (wave) {
-        ARCS.forEach((e, k) => {
-          const li = w.lv[e.i], lj = w.lv[e.j];
-          const from = li <= lj;
-          const lev = Math.min(li, lj);
-          if (lev >= 99) return;
-          const st = 0.15 + lev * 0.62, q = clamp2((age - st) / 1.05);
-          if (q <= 0) return;
-          const fd = Math.max(0, 1 - Math.max(0, age - st - 1.5) / 1.9);
-          if (fd <= 0) return;
-          const hd = easeOut(q), n = e.pts.length - 1;
-          x.beginPath();
-          let up2 = false, hx = null, hy = null;
-          for (let m = 0; m <= n * hd; m++) {
-            const p = e.pts[from ? m : n - m];
-            proj(p, o);
-            if (o[2] <= 0) {
-              up2 = false;
-              continue;
-            }
-            up2 ? x.lineTo(o[0], o[1]) : x.moveTo(o[0], o[1]);
-            up2 = true;
-            hx = o[0];
-            hy = o[1];
-          }
-          x.lineWidth = 1.3 * sc;
-          x.strokeStyle = rgba([240, 176, 124], 0.9 * fd);
-          x.shadowColor = "rgba(242,191,149,.45)";
-          x.shadowBlur = 3;
-          x.stroke();
-          x.shadowBlur = 0;
-          if (q < 1 && hx != null) {
-            x.fillStyle = "#fff";
-            x.beginPath();
-            x.arc(hx, hy, 2.4 * sc, 0, 6.283);
-            x.fill();
-          }
-        });
-        const a = w.v, u = Math.abs(a[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
-        let e1 = [a[1] * u[2] - a[2] * u[1], a[2] * u[0] - a[0] * u[2], a[0] * u[1] - a[1] * u[0]];
-        const nn = Math.hypot(...e1);
-        e1 = e1.map((c) => c / nn);
-        const e2 = [a[1] * e1[2] - a[2] * e1[1], a[2] * e1[0] - a[0] * e1[2], a[0] * e1[1] - a[1] * e1[0]];
-        x.beginPath();
-        let up = false;
-        for (let k = 0; k <= 96; k++) {
-          const th = k / 96 * 6.283, c = Math.cos(rr), s = Math.sin(rr), v = [a[0] * c + (e1[0] * Math.cos(th) + e2[0] * Math.sin(th)) * s, a[1] * c + (e1[1] * Math.cos(th) + e2[1] * Math.sin(th)) * s, a[2] * c + (e1[2] * Math.cos(th) + e2[2] * Math.sin(th)) * s];
-          proj(v, o);
-          if (o[2] <= 0.01) {
+      const arcPath = (e, u0, u1, fwd) => {
+        const n = e.pts.length - 1;
+        F.beginPath();
+        let up = false, hx = null, hy = null;
+        for (let m = Math.floor(n * u0); m <= Math.ceil(n * u1); m++) {
+          const p = e.pts[fwd ? m : n - m];
+          if (!p) continue;
+          proj(p, o);
+          if (o[2] <= 0.04) {
             up = false;
             continue;
           }
-          up ? x.lineTo(o[0], o[1]) : x.moveTo(o[0], o[1]);
+          up ? F.lineTo(o[0], o[1]) : F.moveTo(o[0], o[1]);
           up = true;
+          hx = o[0];
+          hy = o[1];
         }
-        x.lineWidth = 1;
-        x.strokeStyle = rgba(PEACH, 0.5 * amp);
-        x.stroke();
+        return hx == null ? null : [hx, hy];
+      };
+      F.lineCap = "round";
+      const rest = 1 - 0.6 * fv;
+      if (AR > 0) ARCS.forEach((e) => {
+        if (!arcPath(e, 0, 1, true)) return;
+        F.lineWidth = 2.2 * sc;
+        F.strokeStyle = CASE(0.2 * rest);
+        F.stroke();
+        F.lineWidth = 1.2 * sc;
+        F.strokeStyle = LG(0.92 * rest);
+        F.shadowColor = rgba(SIG, 0.55 * rest);
+        F.shadowBlur = 6;
+        F.stroke();
+        F.shadowBlur = 0;
+      });
+      if (AR >= 1) ARCS.forEach((e, k) => {
+        const n = e.pts.length - 1, u0 = (t / (4200 + k % 5 * 500) + k * 0.37) % 1, fade = Math.sin(u0 * Math.PI) * rest;
+        if (fade <= 0.02) return;
+        for (let d = 0; d < 5; d++) {
+          const u = u0 - d * 0.025;
+          if (u < 0) break;
+          proj(e.pts[Math.round(u * n)], o);
+          if (o[2] <= 0.03) continue;
+          const tc = tint(o[1]);
+          F.fillStyle = rgba(d ? mix(tc, SIG, d / 4) : tc, fade * (1 - d * 0.17));
+          F.beginPath();
+          F.arc(o[0], o[1], Math.max(0.7, (2.4 - d * 0.35) * sc), 0, 6.283);
+          F.fill();
+        }
+      });
+      const arrive = [];
+      if (w) {
+        const HOP = 0.5, TRAVEL = 0.95;
+        HV.forEach((h, i) => {
+          const L2 = w.lv[i];
+          arrive[i] = L2 >= 99 ? null : L2 * HOP + (L2 ? TRAVEL : 0);
+        });
+        ARCS.forEach((e) => {
+          const li = w.lv[e.i], lj = w.lv[e.j];
+          if (Math.min(li, lj) >= 99 || li === lj) return;
+          const fwd = li < lj, st = Math.min(li, lj) * HOP, q = (age - st) / TRAVEL;
+          if (q <= 0) return;
+          const n = e.pts.length - 1;
+          const lit = (u1, a) => {
+            if (!arcPath(e, 0, u1, fwd)) return;
+            F.lineWidth = 3.2 * sc;
+            F.strokeStyle = CASE(0.38 * a);
+            F.stroke();
+            F.lineWidth = 1.4 * sc;
+            F.strokeStyle = LG(0.95 * a);
+            F.shadowColor = rgba(SIG, 0.9 * a);
+            F.shadowBlur = 9;
+            F.stroke();
+            F.shadowBlur = 0;
+          };
+          if (q >= 1) {
+            const fd = clamp2(1 - (q - 1) * TRAVEL / 1.6);
+            if (fd > 0) lit(1, fd);
+            return;
+          }
+          const head = easeOut(q);
+          lit(head, 1);
+          const pn = e.pts.length - 1;
+          for (let d = 0; d < 11; d++) {
+            const u = head - d * 0.032;
+            if (u < 0) break;
+            const pp = e.pts[Math.round((fwd ? u : 1 - u) * pn)];
+            proj(pp, o);
+            if (o[2] <= 0.04) continue;
+            const rr2 = (3.4 - d * 0.26) * sc, al = 1 - d * 0.075;
+            F.fillStyle = rgba(d ? mix(WHITE, SIG, Math.min(1, d / 5)) : WHITE, al);
+            if (!d) {
+              F.shadowColor = "rgba(255,255,255,.95)";
+              F.shadowBlur = 12;
+            }
+            F.beginPath();
+            F.arc(o[0], o[1], Math.max(0.8, rr2), 0, 6.283);
+            F.fill();
+            F.shadowBlur = 0;
+          }
+        });
       }
       window.__hub = window.__hub || [];
       HV.forEach((v, i) => {
         proj(v, o);
         window.__hub[i] = [o[0], o[1], o[2]];
-        const hq = Math.min(1, Math.max(0, (AR * 2.4 - ad(v) * 1.4) * 1.5));
-        if (o[2] <= 0.02 || hq <= 0) return;
-        const r = 3.2 * sc * hq;
-        x.fillStyle = rgba([255, 255, 255], 0.22);
-        x.beginPath();
-        x.arc(o[0], o[1], r * 2.3, 0, 6.283);
-        x.fill();
-        x.fillStyle = "#fff";
-        x.beginPath();
-        x.arc(o[0], o[1], r, 0, 6.283);
-        x.fill();
+        if (o[2] <= 0.02 || AR <= 0) return;
+        const r = 3 * sc;
+        const fa = w && arrive[i] != null ? (age - arrive[i]) / 0.9 : -1;
+        if (fa >= 0 && fa < 1) {
+          F.strokeStyle = rgba(SIG, 1 - fa);
+          F.lineWidth = 1.4;
+          F.beginPath();
+          F.arc(o[0], o[1], r + fa * 16 * sc, 0, 6.283);
+          F.stroke();
+        }
+        const boost = fa >= 0 && fa < 1 ? 1 + 0.6 * (1 - fa) : 1;
+        F.fillStyle = rgba(SIG, 0.3);
+        F.beginPath();
+        F.arc(o[0], o[1], r * 2.6 * boost, 0, 6.283);
+        F.fill();
+        F.fillStyle = "#fff";
+        F.beginPath();
+        F.arc(o[0], o[1], r * boost, 0, 6.283);
+        F.fill();
+        F.lineWidth = 0.8;
+        F.strokeStyle = NAVYL + ".35)";
+        F.stroke();
       });
-      if (wave) {
+      if (w) {
         proj(w.v, o);
         if (o[2] > 0) {
-          const pu = clamp2(age / 1.1);
-          x.strokeStyle = rgba([240, 176, 124], 1 - pu);
-          x.lineWidth = 1.2;
-          x.beginPath();
-          x.arc(o[0], o[1], 3 + pu * 14, 0, 6.283);
-          x.stroke();
-          x.fillStyle = rgba([240, 176, 124], Math.max(0, 1 - age / 2.4));
-          x.beginPath();
-          x.arc(o[0], o[1], 3 * sc, 0, 6.283);
-          x.fill();
+          const pu = clamp2(age / 1.2);
+          F.strokeStyle = rgba(WHITE, 1 - pu);
+          F.lineWidth = 1.4;
+          F.beginPath();
+          F.arc(o[0], o[1], 4 + pu * 20 * sc, 0, 6.283);
+          F.stroke();
+          F.fillStyle = rgba(WHITE, Math.max(0, 1 - age / 2.6));
+          F.beginPath();
+          F.arc(o[0], o[1], 3.2 * sc, 0, 6.283);
+          F.fill();
         }
       }
     }
@@ -1975,8 +2028,8 @@
       return [fs[0] + (bp[0] - fs[0]) * zz, fs[1] + (bp[1] - fs[1]) * zz];
     }
     const tips = (z) => TOWERS.map((p) => cover(p, z)).sort((a, b) => b[0] - a[0]);
-    const hots = $$(".home-energy_point", stage).slice(0, TOWERS.length);
-    const card = $(".home-energy_card", stage);
+    const hots = [];
+    const card = null;
     const cTitle = card && $(".home-energy_card-title", card), cVals = card ? $$(".home-energy_card-value", card) : [];
     let openI = -1, hotOn = false;
     if (card) card.setAttribute("role", "tooltip");
@@ -1989,6 +2042,8 @@
       const x = parseFloat(b.style.left), y = parseFloat(b.style.top), W = stage.offsetWidth, w = card.offsetWidth || 250;
       let left = x + 26;
       if (left + w > W - 24) left = x - 26 - w;
+      card.style.transformOrigin = (left > x ? "0%" : "100%") + " 30%";
+      card.style.transition = `opacity 180ms ${EASE_OUT}, transform 180ms ${EASE_OUT}`;
       card.style.left = Math.max(16, left) + "px";
       card.style.top = Math.min(Math.max(80, y - 60), stage.offsetHeight - card.offsetHeight - 24) + "px";
       card.style.opacity = "1";
@@ -1997,6 +2052,7 @@
     function hide() {
       openI = -1;
       if (card) {
+        card.style.transition = `opacity 140ms ${EASE_OUT}, transform 140ms ${EASE_OUT}`;
         card.style.opacity = "";
         card.style.transform = "";
       }
@@ -2200,8 +2256,8 @@
   }
 
   // src/sections/one-world-model.js
-  var IN = "#0071B1";
-  var OUT = "#6DC2F2";
+  var IN2 = "#0071B1";
+  var OUT2 = "#6DC2F2";
   var DRAW_MS = 1300;
   var STAGGER_MS = 70;
   var OUT_DELAY_MS = 900;
@@ -2248,11 +2304,11 @@
       const ct = title.getBoundingClientRect(), cy = ct.top - r.top + ct.height / 2, lx = ct.left - r.left - 18, rx = ct.right - r.left + 18;
       $$(".home-owm_item", lists[0]).forEach((s, i) => {
         const b = s.getBoundingClientRect();
-        lines.push({ el: s, c: curve(b.right - r.left + 14, b.top - r.top + b.height / 2, lx, cy), col: IN, i, side: 0 });
+        lines.push({ el: s, c: curve(b.right - r.left + 14, b.top - r.top + b.height / 2, lx, cy), col: IN2, i, side: 0 });
       });
       $$(".home-owm_item", lists[1]).forEach((s, i) => {
         const b = s.getBoundingClientRect();
-        lines.push({ el: s, c: curve(rx, cy, b.left - r.left - 14, b.top - r.top + b.height / 2), col: OUT, i, side: 1 });
+        lines.push({ el: s, c: curve(rx, cy, b.left - r.left - 14, b.top - r.top + b.height / 2), col: OUT2, i, side: 1 });
       });
       lines.forEach((l, k) => {
         l.el.onmouseenter = () => {
@@ -2350,7 +2406,7 @@
       const im = new Image();
       im.src = CDN + s;
     }));
-    card.style.transition = "opacity .28s ease";
+    card.style.transition = "opacity 220ms ease, filter 220ms ease";
     const autoOn = ON("powerUseCases");
     const auto = () => autoOn && vis && !RM && !mq.matches && !document.hidden;
     function layout() {
@@ -2376,6 +2432,7 @@
         }
       });
       card.style.opacity = "0";
+      card.style.filter = RM ? "" : "blur(2px)";
       clearTimeout(sw);
       sw = setTimeout(() => {
         const u = UC[i];
@@ -2388,6 +2445,7 @@
         }
         layout();
         card.style.opacity = "";
+        card.style.filter = "";
       }, RM ? 0 : 220);
       layout();
     }
@@ -2433,12 +2491,21 @@
     ["Understanding networks. Improving how they operate.", "We are extending our World Models to telecom networks, spanning infrastructure asset management and network operations. By modelling how interconnected network components behave, we aim to help operators make better decisions across increasingly complex and distributed systems."],
     ["A world model for every complex network.", "From data centres to logistics and other critical infrastructure, we see an opportunity to apply the same underlying technology to systems where multiple assets, constraints and decisions interact. We are building towards a future where complex networks can be modelled, simulated and optimised through a common intelligence layer."]
   ];
-  var STEPS = [0.34, 0.67];
+  var STEPS = [1 / 3, 2 / 3];
+  var TURN = 0.07;
+  var SETTLE = [1 / 6, 1 / 2, 5 / 6];
+  var SETTLE_AFTER = 220;
+  var SETTLE_S = 0.9;
+  var sm = (t) => {
+    t = clamp2(t);
+    return t * t * (3 - 2 * t);
+  };
+  var chapter = (p) => sm((p - (STEPS[0] - TURN)) / (2 * TURN)) + sm((p - (STEPS[1] - TURN)) / (2 * TURN));
   function initCopy(bs) {
     const copy = bs.querySelector(".home-beyond_copy"), h3 = copy && copy.querySelector("h3"), pp = copy && copy.querySelector("p"), nets = $$(".home-beyond_net:not(.is-arrow)", bs);
     const trig = copy && (copy.querySelector(".home-beyond_trigger") || h3);
     let cur2 = -1, tm;
-    if (copy) copy.style.transition = "opacity .28s ease,transform .28s ease";
+    if (copy) copy.style.transition = "opacity 240ms ease,transform 240ms cubic-bezier(0.23, 1, 0.32, 1),filter 240ms ease";
     function set(i) {
       if (i === cur2) return;
       const first = cur2 < 0;
@@ -2447,20 +2514,42 @@
       if (first || !copy) return;
       copy.style.opacity = "0";
       copy.style.transform = "translateY(6px)";
+      copy.style.filter = RM ? "" : "blur(2px)";
       clearTimeout(tm);
       tm = setTimeout(() => {
         trig.textContent = COPY[i][0];
         pp.textContent = COPY[i][1];
         copy.style.opacity = "";
         copy.style.transform = "";
-      }, RM ? 0 : 260);
+        copy.style.filter = "";
+      }, RM ? 0 : 240);
     }
     function tick() {
       const r = bs.getBoundingClientRect(), p = clamp2(-r.top / Math.max(1, r.height - innerHeight));
-      set(p < STEPS[0] ? 0 : p < STEPS[1] ? 1 : 2);
+      set(Math.round(chapter(p)));
     }
     addEventListener("scroll", tick, { passive: true });
     tick();
+    let st = 0, gliding = false;
+    addEventListener("scroll", () => {
+      clearTimeout(st);
+      if (gliding || RM) return;
+      st = setTimeout(() => {
+        const r = bs.getBoundingClientRect(), travel = Math.max(1, r.height - innerHeight), p = -r.top / travel;
+        if (p < 0.08 || p > 0.92) return;
+        const target = SETTLE.reduce((a, b) => Math.abs(b - p) < Math.abs(a - p) ? b : a), y = r.top + scrollY + target * travel;
+        if (Math.abs((target - p) * travel) < 6) return;
+        const l = getLenis();
+        gliding = true;
+        if (l) l.scrollTo(y, { duration: SETTLE_S, onComplete: () => {
+          gliding = false;
+        } });
+        else {
+          scrollTo({ top: y, behavior: "smooth" });
+          setTimeout(() => gliding = false, SETTLE_S * 1e3);
+        }
+      }, SETTLE_AFTER);
+    }, { passive: true });
   }
   function initMorph() {
     var morphSec = document.getElementById("beyond"), stage = morphSec && morphSec.querySelector(".home-beyond_sticky");
@@ -2470,10 +2559,14 @@
     cv.id = "morph";
     cv.setAttribute("aria-hidden", "true");
     lift(stage);
-    let morphP = 0, morphE = 0;
+    let morphP = 0, morphE = 0, morphM = 0;
     function mScroll() {
       const vh = innerHeight, m = morphSec.getBoundingClientRect();
       morphP = clamp2(-m.top / Math.max(1, m.height - vh));
+      {
+        const c = chapter(morphP);
+        morphM = c <= 1 ? 0.1 + 0.41 * c : 0.51 + 0.39 * (c - 1);
+      }
       morphE = RM ? 1 : clamp2((vh * 0.6 - m.top) / (vh * 0.6 + (m.height - vh) * 0.08));
     }
     addEventListener("scroll", mScroll, { passive: true });
@@ -2519,8 +2612,8 @@
     function drawMorph(t) {
       const { x, w: W, h: H } = mf;
       if (!W) return;
-      const p = morphP, w0 = 1 - ease(clamp2((p - 0.22) / 0.2)), w2 = ease(clamp2((p - 0.6) / 0.2)), w1 = clamp2(1 - w0 - w2);
-      const end = clamp2((1 - p) / 0.12);
+      const p = morphM, P0 = morphP, w0 = 1 - ease(clamp2((p - 0.22) / 0.2)), w2 = ease(clamp2((p - 0.6) / 0.2)), w1 = clamp2(1 - w0 - w2);
+      const end = clamp2((1 - P0) / 0.12);
       const C0 = [243, 242, 238], bg = mix(mix(mix(C0, [212, 233, 246], clamp2(p / 0.2)), [197, 226, 245], w1), [248, 229, 211], w2), bgc = mix(C0, bg, end * clamp2(morphE * 1.2));
       x.fillStyle = rgba(bgc);
       x.fillRect(0, 0, W, H);
@@ -3012,10 +3105,6 @@
   }
 
   // src/sections/footer-dots.js
-  var SWEEP_MS = 1600;
-  var SHINE_MS = 1300;
-  var SHINE_EVERY = 6500;
-  var REST = 0.16;
   function initFooterDots() {
     const foot = $(".footer_component");
     const dc = canvasIn(foot, "footer_dots");
@@ -3028,20 +3117,12 @@
     };
     bg();
     mq.addEventListener("change", bg);
-    let df, fOn = false, hov = false, tx = 0.6, lx = 0.6, fLast = 0;
+    let df, fOn = false, fLast = 0;
     const buildDots = () => {
       df = fit(dc);
     };
     buildDots();
     addEventListener("resize", debounce2(buildDots));
-    foot.addEventListener("pointermove", (e) => {
-      const r = foot.getBoundingClientRect();
-      tx = (e.clientX - r.left) / r.width;
-      hov = true;
-    });
-    foot.addEventListener("pointerleave", () => {
-      hov = false;
-    });
     function drawDots(t) {
       const { x, w: W, h: H } = df;
       x.clearRect(0, 0, W, H);
@@ -3060,10 +3141,12 @@
         }
       }
     }
+    const WAVE_AT = 0.2, WAVE_S = 1.7, BACK_GAP = 0.15, BACK_S = 1.5, BACK_STRENGTH = 0.45;
     const img = $(".footer_wordmark", foot), wc = canvasIn(foot, "footer_wordmark-canvas");
     const logoOn = ON("footerLogo") && img && wc;
-    let wx = null, ww = 0, wh = 0, off = null, ox = null, ready = false, f = -14, flowed = false, flowRaf = 0, revealedAt = 0;
+    let wx = null, ww = 0, wh = 0, off = null, ox = null, ready = false, state = "rest", t0 = 0;
     const pic = new Image();
+    pic.crossOrigin = "anonymous";
     function buildWord() {
       if (!ready) return;
       ww = wc.getBoundingClientRect().width;
@@ -3081,80 +3164,46 @@
       ox.setTransform(DPR, 0, 0, DPR, 0, 0);
       drawWord(performance.now());
     }
-    function shineAt(t) {
-      if (f < 114) return f > -14 ? f + 7 : null;
-      const k = (t - revealedAt) % SHINE_EVERY / SHINE_MS;
-      return k <= 1 ? -20 + 140 * (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2) : null;
+    function band(o, w, dir, strength) {
+      const sm2 = w < 0.5 ? 2 * w * w : 1 - Math.pow(-2 * w + 2, 2) / 2, pos = dir > 0 ? sm2 : 1 - sm2, c = ww * (-0.25 + 1.5 * pos), bw = ww * (dir > 0 ? 0.16 : 0.12);
+      const cream = rgba(mix([255, 255, 255], [230, 213, 183], strength)), peach = rgba(mix([255, 255, 255], [242, 191, 149], strength));
+      const g = o.createLinearGradient(0, 0, ww, 0), at = (x) => clamp2(x / ww);
+      g.addColorStop(0, "#fff");
+      g.addColorStop(at(c - bw), "#fff");
+      g.addColorStop(at(c - bw * 0.4), cream);
+      g.addColorStop(at(c), peach);
+      g.addColorStop(at(c + bw * 0.4), cream);
+      g.addColorStop(at(c + bw), "#fff");
+      g.addColorStop(1, "#fff");
+      o.globalCompositeOperation = "source-in";
+      o.fillStyle = g;
+      o.fillRect(0, 0, ww, wh);
     }
     function drawWord(t) {
       if (!wx) return;
       wx.clearRect(0, 0, ww, wh);
-      wx.globalAlpha = REST;
-      wx.drawImage(pic, 0, 0, ww, wh);
-      wx.globalAlpha = 1;
-      if (f <= -14) return;
-      const o = ox;
+      if (state === "rest") {
+        wx.drawImage(pic, 0, 0, ww, wh);
+        return;
+      }
+      const e = (t - t0) / 1e3, o = ox;
       o.globalCompositeOperation = "source-over";
       o.clearRect(0, 0, ww, wh);
       o.drawImage(pic, 0, 0, ww, wh);
-      o.globalCompositeOperation = "source-in";
-      const span = ww * 2.4, x0 = (ww - span) * lx, g = o.createLinearGradient(x0, 0, x0 + span, 0);
-      g.addColorStop(0, "#fff");
-      g.addColorStop(0.42, "#fff");
-      g.addColorStop(0.5, "#F2BF95");
-      g.addColorStop(0.58, "#fff");
-      g.addColorStop(1, "#fff");
-      o.fillStyle = g;
-      o.fillRect(0, 0, ww, wh);
-      const sh = shineAt(t);
-      if (sh != null) {
-        o.globalCompositeOperation = "source-atop";
-        const c = ww * sh / 100, bw = ww * 0.09, b = o.createLinearGradient(c - bw, wh, c + bw, 0);
-        b.addColorStop(0, "rgba(255,255,255,0)");
-        b.addColorStop(0.35, "rgba(242,191,149,.55)");
-        b.addColorStop(0.5, "rgba(255,255,255,1)");
-        b.addColorStop(0.65, "rgba(109,194,242,.5)");
-        b.addColorStop(1, "rgba(255,255,255,0)");
-        o.fillStyle = b;
-        o.fillRect(0, 0, ww, wh);
-      }
-      o.globalCompositeOperation = "destination-in";
-      const a = ww * f / 100, m = o.createLinearGradient(a, 0, a + ww * 0.14, 0);
-      m.addColorStop(0, "#000");
-      m.addColorStop(1, "rgba(0,0,0,0)");
-      o.fillStyle = m;
-      o.fillRect(0, 0, ww, wh);
+      const w1 = (e - WAVE_AT) / WAVE_S, w2 = (e - WAVE_AT - WAVE_S - BACK_GAP) / BACK_S;
+      if (w1 > 0 && w1 < 1) band(o, w1, 1, 1);
+      else if (w2 > 0 && w2 < 1) band(o, w2, -1, BACK_STRENGTH);
+      wx.save();
       wx.setTransform(1, 0, 0, 1, 0, 0);
-      wx.shadowColor = "rgba(255,255,255," + (0.25 + 0.25 * clamp2((f + 14) / 128)) + ")";
-      wx.shadowBlur = 22 * DPR;
       wx.drawImage(off, 0, 0);
-      wx.shadowBlur = 0;
-      wx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      wx.restore();
     }
     function flowCheck() {
-      const dist = document.documentElement.scrollHeight - (scrollY + innerHeight);
-      if (dist <= 8 && !flowed) {
-        flowed = true;
-        if (RM) {
-          f = 114;
-          revealedAt = performance.now();
-          drawWord(revealedAt);
-          return;
-        }
-        const t0 = performance.now();
-        cancelAnimationFrame(flowRaf);
-        (function g(t) {
-          const k = clamp2((t - t0) / SWEEP_MS), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-          f = -14 + 128 * e;
-          if (k < 1) flowRaf = requestAnimationFrame(g);
-          else revealedAt = t;
-        })(t0);
-      } else if (dist > 160 && flowed) {
-        flowed = false;
-        cancelAnimationFrame(flowRaf);
-        f = -14;
-        drawWord(performance.now());
-      }
+      const r = wc.getBoundingClientRect();
+      if (state === "rest" && r.bottom < innerHeight - 10 && !RM) {
+        state = "shown";
+        t0 = performance.now();
+      } else if (state === "shown" && r.top > innerHeight) state = "rest";
     }
     if (logoOn) {
       wc.setAttribute("role", "img");
@@ -3175,11 +3224,9 @@
     });
     (function loop(t) {
       if (fOn && df) {
-        if (!hov && !RM) tx = 0.5 + 0.34 * Math.sin(t / 4300);
-        lx += (tx - lx) * 0.06;
+        if (logoOn) drawWord(t);
         if (t - fLast > 33) {
           drawDots(t);
-          if (logoOn) drawWord(t);
           fLast = t;
         }
       }
@@ -3190,7 +3237,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.3.0";
+    window.__arborumAnim = "1.4.0";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

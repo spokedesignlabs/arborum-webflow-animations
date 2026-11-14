@@ -6,7 +6,7 @@
  *     The photo fades in from the cream background and slowly zooms in.
  *  3. The threads continue on the photo and land on the three tower tops.
  *  4. The "01 · Our first frontier / Energy" title, then the heading, then the paragraph fade in.
- *  5. Each tower top gets a pulsing point; hover or tap it for a small card.
+ *  5. (Tower points with info cards: switched off — see "Tower points and card" below.)
  *  6. "critical decisions" opens an info window.
  *
  * Webflow elements (all styled in Webflow):
@@ -19,7 +19,7 @@
  * The pin itself (section height, sticky stage, photo framing) is applied here, so with the script off
  * the Energy section is a normal full-screen section.
  */
-import { RM, ON, $, $$, clamp, DPR, debounce, onLoad, canvasIn, play } from '../core/utils.js';
+import { RM, ON, $, $$, clamp, DPR, debounce, onLoad, canvasIn, play, EASE_OUT } from '../core/utils.js';
 import { makeTrigger } from '../ui/popups.js';
 
 // The photo is 1536×1024. Tower tops in photo pixels, with the card text for each.
@@ -81,9 +81,10 @@ export default function initStatementEnergy() {
   }
   const tips = z => TOWERS.map(p => cover(p, z)).sort((a, b) => b[0] - a[0]);
 
-  // ---- Tower points and card ----
-  const hots = $$('.home-energy_point', stage).slice(0, TOWERS.length);
-  const card = $('.home-energy_card', stage);
+  // ---- Tower points and card: switched off (the threads still land on the tower tops) ----
+  // To bring them back: hots = $$('.home-energy_point', stage).slice(0, TOWERS.length); card = $('.home-energy_card', stage);
+  const hots = [];
+  const card = null;
   const cTitle = card && $('.home-energy_card-title', card), cVals = card ? $$('.home-energy_card-value', card) : [];
   let openI = -1, hotOn = false;
   if (card) card.setAttribute('role', 'tooltip');
@@ -94,11 +95,13 @@ export default function initStatementEnergy() {
     cVals.forEach((v, k) => v.textContent = d[3 + k] || '');
     const x = parseFloat(b.style.left), y = parseFloat(b.style.top), W = stage.offsetWidth, w = card.offsetWidth || 250;
     let left = x + 26; if (left + w > W - 24) left = x - 26 - w;
+    card.style.transformOrigin = (left > x ? '0%' : '100%') + ' 30%'; // grows from the side of its point
+    card.style.transition = `opacity 180ms ${EASE_OUT}, transform 180ms ${EASE_OUT}`;
     card.style.left = Math.max(16, left) + 'px';
     card.style.top = Math.min(Math.max(80, y - 60), stage.offsetHeight - card.offsetHeight - 24) + 'px';
     card.style.opacity = '1'; card.style.transform = 'none';
   }
-  function hide() { openI = -1; if (card) { card.style.opacity = ''; card.style.transform = '' } hots.forEach(h => h.__tap = false) }
+  function hide() { openI = -1; if (card) { card.style.transition = `opacity 140ms ${EASE_OUT}, transform 140ms ${EASE_OUT}`; card.style.opacity = ''; card.style.transform = '' } hots.forEach(h => h.__tap = false) } // closes a touch faster than it opens
   hots.forEach((b, i) => {
     b.setAttribute('role', 'button'); b.tabIndex = 0; b.setAttribute('aria-label', 'Details for ' + TOWERS[i][2]);
     b.addEventListener('mouseenter', () => show(i));

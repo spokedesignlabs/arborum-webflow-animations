@@ -51,3 +51,8 @@ export function play(el, frames, opts) { if (!el || !el.animate) return null; re
 // Per-animation switches, set in Webflow (Site settings > Custom code > Footer) as window.arborumAnimations.
 // Anything not listed, or the whole list missing, counts as on. Names: see README.
 export const ON = name => { const s = window.arborumAnimations; return !s || s[name] !== false };
+
+// Motion curves (strong custom curves; built-in CSS easings are too weak)
+export const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';      // entering / responding UI
+export const EASE_IN_OUT = 'cubic-bezier(0.77, 0, 0.175, 1)';  // moving on screen
+export const EASE_DRAWER = 'cubic-bezier(0.32, 0.72, 0, 1)';   // panels sliding in

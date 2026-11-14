@@ -29,6 +29,7 @@ function buildGlobe(){const f=fit(gc);gx=f.x;gW=f.w;gH=f.h;gR=clamp(gW*.46,300,7
 function proj(v,out){const a=(lon+pLon)*Math.PI/180,b=lat*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);const x=v[0]*ca-v[2]*sa,z0=v[0]*sa+v[2]*ca,y=v[1]*cb-z0*sb,z=v[1]*sb+z0*cb;out[0]=gCx+x*gR;out[1]=gCy-y*gR;out[2]=z;return out}
 function unproj(px,py){const X=(px-gCx)/gR,Y=(gCy-py)/gR,q=X*X+Y*Y;if(q>=1)return null;const Z=Math.sqrt(1-q),a=(lon+pLon)*Math.PI/180,b=lat*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);const z0=Z*cb-Y*sb,y=Y*cb+Z*sb;return[X*ca+z0*sa,y,-X*sa+z0*ca]}
 const easeOut=t=>1-Math.pow(1-t,3),WAVE=4.4;
+// A click sends a pulse: the globe deepens to Sky Horizon blue for a moment and bright dot trails race city to city.
 const GRAT=[];for(let lo=0;lo<180;lo+=30){const a=[];for(let la=-180;la<=180;la+=5)a.push(toV(la<=90&&la>=-90?la:(la>0?180-la:-180-la),la<=90&&la>=-90?lo:lo+180));GRAT.push(a)}for(let la=-60;la<=60;la+=30){const a=[];for(let lo=-180;lo<=180;lo+=5)a.push(toV(la,lo));GRAT.push(a)}
 function drawGlobe(t){if(!gx)return;let x=gx;x.clearRect(0,0,gW,gH);const FX=(()=>{const c=dotsCv;if(!c)return gx;if(c.width!==gc.width||c.height!==gc.height){c.width=gc.width;c.height=gc.height}const f=c.getContext('2d');f.setTransform(1,0,0,1,0,0);f.clearRect(0,0,c.width,c.height);f.setTransform(gx.getTransform());return f})();
  const hi=gR-70,ho=gR+170,hs=(gR-hi)/(ho-hi);const halo=x.createRadialGradient(gCx,gCy,hi,gCx,gCy,ho);halo.addColorStop(0,'rgba(255,255,255,0)');halo.addColorStop(hs,'rgba(255,255,255,.8)');halo.addColorStop(hs+.035,'rgba(255,255,255,.3)');halo.addColorStop(hs+.26,'rgba(255,255,255,0)');halo.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=halo;x.fillRect(0,0,gW,gH);
@@ -38,23 +39,60 @@ function drawGlobe(t){if(!gx)return;let x=gx;x.clearRect(0,0,gW,gH);const FX=(()
  const buckets=[[],[],[],[]];const hot=[];const sc=clamp(gW/1440,.72,1.15);
  const ra=(lon+pLon)*Math.PI/180,rb=lat*Math.PI/180,ca=Math.cos(ra),sa=Math.sin(ra),cb=Math.cos(rb),sb=Math.sin(rb);const wv=wave?w.v:null;
  for(let i=0;i<LV.length;i+=3){const vx=LV[i],vy=LV[i+1],vz=LV[i+2],xx=vx*ca-vz*sa,z0=vx*sa+vz*ca,yy=vy*cb-z0*sb,zz=vy*sb+z0*cb;if(zz<=.01)continue;const px=gCx+xx*gR,py=gCy-yy*gR;if(py>gH+4||px<-4||px>gW+4)continue;let b=0;if(wv){const ang=Math.acos(clamp(vx*wv[0]+vy*wv[1]+vz*wv[2],-1,1));b=(Math.exp(-(((ang-rr)/.1)**2))+Math.exp(-((ang/.12)**2))*Math.max(0,1-age*.55))*amp}
-  if(b>.04)hot.push([px,py,zz,b]);else buckets[Math.min(3,zz*5|0)].push(px,py,zz)}
+  buckets[Math.min(3,zz*5|0)].push(px,py,zz)}
  buckets.forEach((a,k)=>{const x=FX;x.fillStyle=rgba(mix([200,232,250],[0,84,140],k/3),.95);x.beginPath();for(let i=0;i<a.length;i+=3){const r=(1+.8*a[i+2])*sc;x.moveTo(a[i]+r,a[i+1]);x.arc(a[i],a[i+1],r,0,6.283)}x.fill()});
- for(const h of hot){const r=(.74+.5*h[2])*sc*(1+.6*clamp(h[3]));x.fillStyle=rgba(mix([255,255,255],PEACH,clamp(h[3]*1.2)),clamp(.6+h[3]));x.beginPath();x.arc(h[0],h[1],r,0,6.283);x.fill()}
+ // ---- clear network layer: every line sits on the normal layer above the globe (never blended into the sky) ----
+ const F=FX,SIG=[77,173,255],NAVYL='rgba(5,19,28,',WHITE=[255,255,255];
+ // land dots the ripple has reached: white into Sky Horizon blue
+ for(const h of hot){const r=(1+.8*h[2])*sc*(1+.35*clamp(h[3]));F.fillStyle=rgba(mix([200,232,250],SIG,clamp(h[3]*1.1)),.95);F.beginPath();F.arc(h[0],h[1],r,0,6.283);F.fill()}
  x.lineWidth=.7;x.strokeStyle='rgba(255,255,255,.13)';x.beginPath();for(const l of GRAT){let up=false;for(const p of l){proj(p,o);if(o[2]<=.02){up=false;continue}up?x.lineTo(o[0],o[1]):x.moveTo(o[0],o[1]);up=true}}x.stroke();
- x.lineWidth=2*sc;x.lineCap='round';
- const AR=window.__arcR==null?1:window.__arcR,AO=window.__arcO,ad=p=>AO?Math.acos(Math.max(-1,Math.min(1,(p[0]*AO[0]+p[1]*AO[1]+p[2]*AO[2])/(Math.hypot(p[0],p[1],p[2])||1))))/Math.PI:0;if(AR>0)ARCS.forEach((e,k)=>{if(wave&&w.lv){const lv2=Math.min(w.lv[e.i],w.lv[e.j]);if(lv2<99&&age>.15+lv2*.62&&age<.15+lv2*.62+3.4)return}const n=e.pts.length,d0=ad(e.pts[0]),d1=ad(e.pts[n-1]),rev=d1<d0,lim=Math.ceil(n*Math.min(1,Math.max(0,(AR*2.4-Math.min(d0,d1)*1.4-(AO?0:k*.03))*1.5)));x.beginPath();let up=false;const P2=rev?e.pts.slice().reverse():e.pts;for(const p of P2.slice(0,lim)){proj(p,o);if(o[2]<=.05){up=false;continue}up?x.lineTo(o[0],o[1]):x.moveTo(o[0],o[1]);up=true}x.strokeStyle=rgba([255,255,255],.4);x.stroke()});
- x=FX;ARCS.forEach((e,k)=>{if(k%2||AR<1)return;const n=e.pts.length-1,u=((t/4200+k*.37)%1),p=e.pts[Math.round(u*n)];proj(p,o);if(o[2]<=.02)return;x.fillStyle=rgba([240,176,124],.85*Math.sin(u*Math.PI));x.beginPath();x.arc(o[0],o[1],2.8*sc,0,6.283);x.fill()});
- if(wave){const v0=w.v,nh=HV.map((h,i)=>[i,dot(h,v0)]).sort((p,q)=>q[1]-p[1]).slice(0,4),sq=clamp(age/.55),sf=Math.max(0,1-Math.max(0,age-2.4)/1.6);
-  if(sf>0)nh.forEach(([i],k)=>{const h=HV[i],c=clamp(dot(h,v0),-1,1),om=Math.acos(c);if(om<1e-3)return;const so=Math.sin(om),qq=clamp(sq*1.3-k*.1);if(qq<=0)return;x.beginPath();let up=false,hx=null,hy=null;for(let m=0;m<=24*qq;m++){const t2=m/24,a1=Math.sin((1-t2)*om)/so,a2=Math.sin(t2*om)/so;proj([v0[0]*a1+h[0]*a2,v0[1]*a1+h[1]*a2,v0[2]*a1+h[2]*a2],o);if(o[2]<=0){up=false;continue}up?x.lineTo(o[0],o[1]):x.moveTo(o[0],o[1]);up=true;hx=o[0];hy=o[1]}
-   x.lineWidth=1.1*sc;x.strokeStyle=rgba([240,176,124],.75*sf);x.shadowColor='rgba(242,191,149,.4)';x.shadowBlur=3;x.stroke();x.shadowBlur=0;if(hx!=null&&qq>=1){x.fillStyle=rgba([240,176,124],sf);x.beginPath();x.arc(hx,hy,3.2*sc,0,6.283);x.fill()}});}
- if(wave){ // the response travels hub to hub along the network
-  ARCS.forEach((e,k)=>{const li=w.lv[e.i],lj=w.lv[e.j];const from=li<=lj;const lev=Math.min(li,lj);if(lev>=99)return;const st=.15+lev*.62,q=clamp((age-st)/1.05);if(q<=0)return;const fd=Math.max(0,1-Math.max(0,age-st-1.5)/1.9);if(fd<=0)return;const hd=easeOut(q),n=e.pts.length-1;x.beginPath();let up=false,hx=null,hy=null;for(let m=0;m<=n*hd;m++){const p=e.pts[from?m:n-m];proj(p,o);if(o[2]<=0){up=false;continue}up?x.lineTo(o[0],o[1]):x.moveTo(o[0],o[1]);up=true;hx=o[0];hy=o[1]}x.lineWidth=1.3*sc;x.strokeStyle=rgba([240,176,124],.9*fd);x.shadowColor='rgba(242,191,149,.45)';x.shadowBlur=3;x.stroke();x.shadowBlur=0;if(q<1&&hx!=null){x.fillStyle='#fff';x.beginPath();x.arc(hx,hy,2.4*sc,0,6.283);x.fill()}});
-  // ring on the surface
-  const a=w.v,u=Math.abs(a[1])<.9?[0,1,0]:[1,0,0];let e1=[a[1]*u[2]-a[2]*u[1],a[2]*u[0]-a[0]*u[2],a[0]*u[1]-a[1]*u[0]];const nn=Math.hypot(...e1);e1=e1.map(c=>c/nn);const e2=[a[1]*e1[2]-a[2]*e1[1],a[2]*e1[0]-a[0]*e1[2],a[0]*e1[1]-a[1]*e1[0]];
-  x.beginPath();let up=false;for(let k=0;k<=96;k++){const th=k/96*6.283,c=Math.cos(rr),s=Math.sin(rr),v=[a[0]*c+(e1[0]*Math.cos(th)+e2[0]*Math.sin(th))*s,a[1]*c+(e1[1]*Math.cos(th)+e2[1]*Math.sin(th))*s,a[2]*c+(e1[2]*Math.cos(th)+e2[2]*Math.sin(th))*s];proj(v,o);if(o[2]<=.01){up=false;continue}up?x.lineTo(o[0],o[1]):x.moveTo(o[0],o[1]);up=true}x.lineWidth=1;x.strokeStyle=rgba(PEACH,.5*amp);x.stroke()}
- window.__hub=window.__hub||[];HV.forEach((v,i)=>{proj(v,o);window.__hub[i]=[o[0],o[1],o[2]];const hq=Math.min(1,Math.max(0,(AR*2.4-ad(v)*1.4)*1.5));if(o[2]<=.02||hq<=0)return;const r=3.2*sc*hq;x.fillStyle=rgba([255,255,255],.22);x.beginPath();x.arc(o[0],o[1],r*2.3,0,6.283);x.fill();x.fillStyle='#fff';x.beginPath();x.arc(o[0],o[1],r,0,6.283);x.fill()});
- if(wave){proj(w.v,o);if(o[2]>0){const pu=clamp(age/1.1);x.strokeStyle=rgba([240,176,124],1-pu);x.lineWidth=1.2;x.beginPath();x.arc(o[0],o[1],3+pu*14,0,6.283);x.stroke();x.fillStyle=rgba([240,176,124],Math.max(.0,1-age/2.4));x.beginPath();x.arc(o[0],o[1],3*sc,0,6.283);x.fill()}}}
+ const AR=window.__arcR==null?1:window.__arcR;
+ // lines adapt to what is behind them: white over the deep-blue top of the globe, Sky Horizon blue over its pale lower part
+ const yT=gCy-gR,span=Math.max(1,gH-yT),DEEP2=[0,113,177];
+ // (while the globe is deepened during a pulse, everything turns white)
+ const LG=a=>{const c1=mix([46,155,218],WHITE,fvG),c2=mix(DEEP2,WHITE,fvG),g=F.createLinearGradient(0,yT,0,gH);g.addColorStop(0,'rgba(255,255,255,'+a+')');g.addColorStop(.3,'rgba(255,255,255,'+a+')');g.addColorStop(.58,rgba(c1,a));g.addColorStop(1,rgba(c2,a));return g};
+ const CASE=a=>{if(fvG>.5)return NAVYL+a+')';const g=F.createLinearGradient(0,yT,0,gH);g.addColorStop(0,NAVYL+a+')');g.addColorStop(.45,NAVYL+(a*.6)+')');g.addColorStop(.7,'rgba(255,255,255,'+(a*1.6)+')');g.addColorStop(1,'rgba(255,255,255,'+(a*1.6)+')');return g};
+ const tint=y=>{const k=clamp(((y-yT)/span-.3)/.4)*(1-fvG);return mix(WHITE,DEEP2,k*k*(3-2*k))};
+ const fvG=w?clamp(age/.35)*(1-clamp((age-2.9)/1.3)):0;
+ // pulse: for a moment the globe deepens to Sky Horizon blue, so the network is the brightest thing on it
+ const fv=w?clamp(age/.35)*(1-clamp((age-2.9)/1.3)):0;
+ if(fv>0){const vg=F.createRadialGradient(gCx,gCy-gR*.6,gR*.1,gCx,gCy,gR);vg.addColorStop(0,'rgba(0,113,177,'+(.5*fv)+')');vg.addColorStop(.7,'rgba(0,92,150,'+(.6*fv)+')');vg.addColorStop(1,'rgba(0,73,122,'+(.68*fv)+')');F.fillStyle=vg;F.beginPath();F.arc(gCx,gCy,gR,0,6.283);F.fill()}
+ // path of an arc (part of it: from u0 to u1 of its length, in the direction "fwd")
+ const arcPath=(e,u0,u1,fwd)=>{const n=e.pts.length-1;F.beginPath();let up=false,hx=null,hy=null;for(let m=Math.floor(n*u0);m<=Math.ceil(n*u1);m++){const p=e.pts[fwd?m:n-m];if(!p)continue;proj(p,o);if(o[2]<=.04){up=false;continue}up?F.lineTo(o[0],o[1]):F.moveTo(o[0],o[1]);up=true;hx=o[0];hy=o[1]}return hx==null?null:[hx,hy]};
+ // resting network: a hair-thin navy edge under a white line, so it reads on the light and the dark parts of the globe
+ F.lineCap='round';
+ const rest=1-.6*fv; // the resting network steps back while a pulse runs
+ // resting network, always readable: navy edge underneath, crisp white line, faint blue glow
+ if(AR>0)ARCS.forEach(e=>{if(!arcPath(e,0,1,true))return;F.lineWidth=2.2*sc;F.strokeStyle=CASE(.2*rest);F.stroke();F.lineWidth=1.2*sc;F.strokeStyle=LG(.92*rest);F.shadowColor=rgba(SIG,.55*rest);F.shadowBlur=6;F.stroke();F.shadowBlur=0});
+ // quiet data flow along every other arc: small white points with a blue glow
+ // data moving along every route: a short trail of dots (white at the front, into Signal Blue), always running
+ if(AR>=1)ARCS.forEach((e,k)=>{const n=e.pts.length-1,u0=((t/(4200+(k%5)*500)+k*.37)%1),fade=Math.sin(u0*Math.PI)*rest;if(fade<=.02)return;
+  for(let d=0;d<5;d++){const u=u0-d*.025;if(u<0)break;proj(e.pts[Math.round(u*n)],o);if(o[2]<=.03)continue;const tc=tint(o[1]);F.fillStyle=rgba(d?mix(tc,SIG,d/4):tc,fade*(1-d*.17));F.beginPath();F.arc(o[0],o[1],Math.max(.7,(2.4-d*.35)*sc),0,6.283);F.fill()}});
+ // when each hub is reached by a pulse (seconds after the click), for flashes
+ const arrive=[];
+ if(w){
+  const HOP=.5,TRAVEL=.95;
+  HV.forEach((h,i)=>{const L=w.lv[i];arrive[i]=L>=99?null:L*HOP+(L?TRAVEL:0)});
+  ARCS.forEach(e=>{const li=w.lv[e.i],lj=w.lv[e.j];if(Math.min(li,lj)>=99||li===lj)return;const fwd=li<lj,st=Math.min(li,lj)*HOP,q=(age-st)/TRAVEL;if(q<=0)return;
+   const n=e.pts.length-1;
+   // the arc stays lit for a moment after the pulse has passed
+   // a lit line: thin white with a navy casing underneath and a soft blue glow (reads on light and dark)
+   const lit=(u1,a)=>{if(!arcPath(e,0,u1,fwd))return;F.lineWidth=3.2*sc;F.strokeStyle=CASE(.38*a);F.stroke();F.lineWidth=1.4*sc;F.strokeStyle=LG(.95*a);F.shadowColor=rgba(SIG,.9*a);F.shadowBlur=9;F.stroke();F.shadowBlur=0};
+   if(q>=1){const fd=clamp(1-(q-1)*TRAVEL/1.6);if(fd>0)lit(1,fd);return}
+   const head=easeOut(q);lit(head,1);
+   // the pulse itself: a short trail of dots (the logomark's dot language), largest and brightest at the front
+   const pn=e.pts.length-1;for(let d=0;d<11;d++){const u=head-d*.032;if(u<0)break;const pp=e.pts[Math.round((fwd?u:1-u)*pn)];proj(pp,o);if(o[2]<=.04)continue;
+    const rr2=(3.4-d*.26)*sc,al=1-d*.075;F.fillStyle=rgba(d?mix(WHITE,SIG,Math.min(1,d/5)):WHITE,al);if(!d){F.shadowColor='rgba(255,255,255,.95)';F.shadowBlur=12}F.beginPath();F.arc(o[0],o[1],Math.max(.8,rr2),0,6.283);F.fill();F.shadowBlur=0}});
+ }
+ // hubs: white points with a navy hairline; they flash when a pulse reaches them
+ window.__hub=window.__hub||[];HV.forEach((v,i)=>{proj(v,o);window.__hub[i]=[o[0],o[1],o[2]];if(o[2]<=.02||AR<=0)return;const r=3*sc;
+  const fa=w&&arrive[i]!=null?(age-arrive[i])/.9:-1;
+  if(fa>=0&&fa<1){F.strokeStyle=rgba(SIG,1-fa);F.lineWidth=1.4;F.beginPath();F.arc(o[0],o[1],r+fa*16*sc,0,6.283);F.stroke()}
+  const boost=fa>=0&&fa<1?1+.6*(1-fa):1;
+  F.fillStyle=rgba(SIG,.3);F.beginPath();F.arc(o[0],o[1],r*2.6*boost,0,6.283);F.fill();
+  F.fillStyle='#fff';F.beginPath();F.arc(o[0],o[1],r*boost,0,6.283);F.fill();F.lineWidth=.8;F.strokeStyle=NAVYL+'.35)';F.stroke()});
+ // where you clicked: a small white point with a ring opening out
+ if(w){proj(w.v,o);if(o[2]>0){const pu=clamp(age/1.2);F.strokeStyle=rgba(WHITE,1-pu);F.lineWidth=1.4;F.beginPath();F.arc(o[0],o[1],4+pu*20*sc,0,6.283);F.stroke();F.fillStyle=rgba(WHITE,Math.max(0,1-age/2.6));F.beginPath();F.arc(o[0],o[1],3.2*sc,0,6.283);F.fill()}}}
 let gDrift=1,gLast=0;function gLoop(t){gRaf=0;if(!gOn)return;const dt=Math.min(50,t-gLast||16);gLast=t;
  if(!dragging){if(!RM){const m=((lon-78+540)%360)-180;if(m>42)gDrift=-1;else if(m<-42)gDrift=1;lon+=dt*.0016*gDrift}lon+=vLon;vLon*=.94;if(Math.abs(vLon)<.001)vLon=0}
  lat+=(tLat-lat)*.05;pLon+=(tPLon-pLon)*.05;drawGlobe(t);

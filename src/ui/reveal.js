@@ -1,25 +1,43 @@
-/* Gentle reveal: blocks fade up as they come into view (Home and About).
- * Add a class to REVEAL to include more blocks. Nothing is hidden until this script runs,
- * so with the script off every block simply shows.
+/* Reveal: one way content appears, on every page.
+ * As a block comes into view it fades up gently (16px, 0.7s). Items that belong together (a list, the steps,
+ * the investor logos) come in one after another, 60ms apart. Nothing is hidden until this script runs, so with
+ * the script off everything simply shows. The hero, the Energy text and Beyond Energy have their own motion.
+ *
+ * REVEAL: [selector, group]. group = true means "each child of this element, one after another".
  */
-import { RM, $$, play } from '../core/utils.js';
+import { RM, $$ } from '../core/utils.js';
 
+const MOVE = 16, DURATION = 700, STAGGER = 60, EASE = 'cubic-bezier(0.23, 1, 0.32, 1)';
 const REVEAL = [
-  // Home (the Energy text has its own stepped reveal in statement-energy.js)
-  '.home-statement_component', '.home-owm_component', '.home-usecases_component',
-  '.home-world_heading', '.home-world_steps', '.home-world_ctas',
+  // Home
+  ['.home-statement_component', false],
+  ['.home-owm_list', true], ['.home-owm_title', false],
+  ['.home-usecases_heading', false], ['.home-usecases_body', false],
+  ['.home-world_heading', true], ['.home-world_steps', true], ['.home-world_ctas', true],
   // About
-  '.about-block_component', '.about-partners_component'
+  ['.about-block_heading', true], ['.about-block_copy', true],
+  ['.about-partners_heading', true], ['.about-partners_grid', true],
+  // Both pages
+  ['.footer_top', false], ['.footer_bottom', false]
 ];
 
 export default function initReveal() {
   if (RM || !('IntersectionObserver' in window)) return;
-  const els = $$(REVEAL.join(',')).filter(el => el.getBoundingClientRect().top > innerHeight); // leave what is already on screen
+  const items = [];
+  REVEAL.forEach(([sel, group]) => $$(sel).forEach(el => {
+    if (group) [...el.children].forEach((ch, i) => items.push([ch, i * STAGGER])); else items.push([el, 0]);
+  }));
   const io = new IntersectionObserver(es => es.forEach(e => {
     if (!e.isIntersecting) return;
     io.unobserve(e.target);
-    play(e.target, [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], { duration: 800, easing: 'ease', fill: 'none' });
-    e.target.style.opacity = ''; e.target.style.transform = '';
-  }), { threshold: .12 });
-  els.forEach(el => { el.style.opacity = '0'; el.style.transform = 'translateY(18px)'; io.observe(el) });
+    const el = e.target, delay = el.__rvDelay || 0;
+    el.style.transition = `opacity ${DURATION}ms ${EASE} ${delay}ms, transform ${DURATION}ms ${EASE} ${delay}ms`;
+    el.style.opacity = '1'; el.style.transform = 'none';
+    setTimeout(() => { el.style.transition = ''; el.style.opacity = ''; el.style.transform = '' }, DURATION + delay + 50);
+  }), { threshold: .12, rootMargin: '0px 0px -6% 0px' });
+  items.forEach(([el, delay]) => {
+    if (el.__rvDelay !== undefined) return;
+    el.__rvDelay = delay; el.style.opacity = '0'; el.style.transform = `translateY(${MOVE}px)`;
+    io.observe(el);
+  });
 }

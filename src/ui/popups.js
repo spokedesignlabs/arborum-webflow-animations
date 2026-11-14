@@ -9,7 +9,7 @@
  *   .toast_component
  * This file only shows, places and animates them.
  */
-import { RM, $, $$, keyable, play } from '../core/utils.js';
+import { RM, $, $$, keyable, play, clamp, EASE_OUT } from '../core/utils.js';
 
 let dw, K, T, P, L, steps = [], cur = null, timer, onClose = null, openY = 0;
 
@@ -62,10 +62,15 @@ export function openWindow(trigger, d, opts = {}) {
   let y = r.bottom + 14;
   dw.style.left = x + 'px'; dw.style.top = y + 'px';
   const h = dw.offsetHeight;
-  if (y + h > innerHeight - 16) { y = Math.max(16, r.top - h - 14); dw.style.top = y + 'px' }
+  const above = y + h > innerHeight - 16;
+  if (above) { y = Math.max(16, r.top - h - 14); dw.style.top = y + 'px' }
   if (!RM) {
-    play(dw, [{ opacity: 0, transform: 'translateY(8px) scale(.98)', clipPath: 'inset(0 0 100% 0)' }, { opacity: 1, transform: 'none', clipPath: 'inset(0 0 0 0)' }], { duration: 450, easing: 'cubic-bezier(.2,.7,.2,1)' });
-    play($('.popup_scan', dw), [{ top: '0%', opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .9 }, { top: '100%', opacity: 0 }], { duration: 1000, easing: 'ease-out' });
+    // opens from its trigger (top edge when below it, bottom edge when above), quick and responsive
+    const ox = clamp((r.left + r.width / 2 - x) / w * 100, 0, 100).toFixed(1) + '%';
+    dw.style.transformOrigin = ox + (above ? ' 100%' : ' 0%');
+    play(dw, [{ opacity: 0, transform: `translateY(${above ? -6 : 6}px) scale(.97)` }, { opacity: 1, transform: 'none' }], { duration: 220, easing: EASE_OUT });
+    const scan = $('.popup_scan', dw);
+    play(scan, [{ transform: 'translateY(0)', opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .9 }, { transform: `translateY(${h}px)`, opacity: 0 }], { duration: 700, easing: EASE_OUT });
   }
   const shown = steps.slice(0, list.length);
   if (RM) { shown.forEach(s => stepOn(s, true)); return }
@@ -81,12 +86,12 @@ export function closeWindow() {
   f && f(t);
 }
 
-/* Make a Webflow element (a highlighted phrase) open the panel. Its highlight style is set in Webflow;
- * while its window is open the highlight fills the whole phrase. */
+/* Make a Webflow element (an underlined phrase) open the panel. Its underline style is set in Webflow;
+ * while its window is open the solid line stays drawn. */
 export function makeTrigger(el, d, opts) {
   el.setAttribute('role', 'button'); el.setAttribute('aria-expanded', 'false');
   if (!el.hasAttribute('tabindex')) el.tabIndex = 0;
-  const on = v => { el.style.backgroundSize = v ? '100% 100%' : '' };
+  const on = v => { el.style.setProperty('background-size', v ? '100% 2px, 100% 1px' : '', v ? 'important' : '') };
   const open = e => {
     e && e.stopPropagation();
     openWindow(el, typeof d === 'function' ? d() : d, Object.assign({ onClose: () => on(false) }, opts));

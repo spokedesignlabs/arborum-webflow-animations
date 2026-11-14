@@ -6,7 +6,7 @@
  *      header "Beyond Energy" → the start of the Beyond Energy story
  *      footer links     → their section (also works when arriving from the About page)
  *  - The header chapter marker highlights the section you are in.
- * The chapter marker style (brand blue, semibold) is set here because it follows the scroll.
+ * The chapter marker's active look (brand blue, semibold, full underline) is set here because it follows the scroll.
  */
 import Lenis from 'lenis';
 import { RM, $, $$ } from '../core/utils.js';
@@ -67,7 +67,7 @@ export default function initSmoothScroll() {
     const ch = () => {
       const mk = innerHeight * .5, p = en.getBoundingClientRect(), b = be.getBoundingClientRect(), w = wo ? wo.getBoundingClientRect().top : 1e9;
       const c1 = p.top <= mk && b.top > mk, c2 = b.top <= mk && w > mk;
-      [c1, c2].forEach((on, k) => { if (!links[k]) return; links[k].style.color = on ? '#0071B1' : ''; links[k].style.fontWeight = on ? '600' : ''; links[k].toggleAttribute('aria-current', on) });
+      [c1, c2].forEach((on, k) => { if (!links[k]) return; const l = links[k]; l.style.color = on ? '#0071B1' : ''; l.style.fontWeight = on ? '600' : ''; l.style.setProperty('background-size', on ? '100% 1.5px' : '', on ? 'important' : ''); l.style.setProperty('background-position', on ? '0% 100%' : '', on ? 'important' : ''); l.toggleAttribute('aria-current', on) });
     };
     addEventListener('scroll', ch, { passive: true }); ch();
   }

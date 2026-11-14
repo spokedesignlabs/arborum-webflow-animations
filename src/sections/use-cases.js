@@ -27,7 +27,7 @@ export default function initUseCases() {
   const bars = tabs.map(t => $('.home-usecases_progress', t));
   let cur = 0, sw, since = performance.now(), vis = false;
   UC.forEach(u => [u.i, u.m].forEach(s => { const im = new Image(); im.src = CDN + s }));
-  card.style.transition = 'opacity .28s ease';
+  card.style.transition = 'opacity 220ms ease, filter 220ms ease'; // a light blur bridges old and new text
 
   const autoOn = ON('powerUseCases');
   const auto = () => autoOn && vis && !RM && !mq.matches && !document.hidden;
@@ -46,11 +46,11 @@ export default function initUseCases() {
       if (l) l.classList.toggle('is-active', on);
       if (ic) { ic.classList.toggle('is-active', on); ic.textContent = on ? '−' : '+' }
     });
-    card.style.opacity = '0'; clearTimeout(sw);
+    card.style.opacity = '0'; card.style.filter = RM ? '' : 'blur(2px)'; clearTimeout(sw);
     sw = setTimeout(() => {
       const u = UC[i]; K.textContent = u.k; T.textContent = u.t; D.textContent = u.d;
       if (photo) { photo.style.backgroundImage = 'url(' + CDN + u.m + ')'; photo.style.backgroundPosition = u.p }
-      layout(); card.style.opacity = '';
+      layout(); card.style.opacity = ''; card.style.filter = '';
     }, RM ? 0 : 220);
     layout();
   }
