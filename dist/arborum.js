@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.7 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.8 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2424,7 +2424,7 @@
     }));
     card.style.transition = "opacity 220ms ease, filter 220ms ease";
     const autoOn = ON("powerUseCases");
-    const auto = () => autoOn && vis && !RM && !document.hidden;
+    const auto = () => autoOn && vis && !RM && !mq.matches && !document.hidden;
     function layout() {
       tabs.forEach((t, j) => {
         t.style.order = mq.matches ? String(j <= cur2 ? j * 2 : j * 2 + 2) : "";
@@ -2490,12 +2490,12 @@
           set((cur2 + 1) % 3);
           p = 0;
         }
-      } else if (autoOn) {
+      } else if (autoOn && !mq.matches) {
         since = t;
         p = 0;
       }
       bars.forEach((b, j) => {
-        if (b) b.style.transform = "scaleX(" + (j === cur2 ? !autoOn || RM ? 1 : p : 0) + ")";
+        if (b) b.style.transform = "scaleX(" + (j === cur2 ? !autoOn || mq.matches || RM ? 1 : p : 0) + ")";
       });
       requestAnimationFrame(loop);
     })(performance.now());
@@ -3273,7 +3273,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.7";
+    window.__arborumAnim = "1.4.8";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],
