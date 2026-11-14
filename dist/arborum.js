@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.8 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.9 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2447,10 +2447,7 @@
           ic.textContent = on ? "\u2212" : "+";
         }
       });
-      card.style.opacity = "0";
-      card.style.filter = RM ? "" : "blur(2px)";
-      clearTimeout(sw);
-      sw = setTimeout(() => {
+      const fill = () => {
         const u = UC[i];
         K2.textContent = u.k;
         T2.textContent = u.t;
@@ -2459,6 +2456,31 @@
           photo.style.backgroundImage = "url(" + CDN + u.m + ")";
           photo.style.backgroundPosition = u.p;
         }
+      };
+      clearTimeout(sw);
+      if (mq.matches) {
+        const before = tabs[i].getBoundingClientRect().top;
+        fill();
+        layout();
+        const d = tabs[i].getBoundingClientRect().top - before;
+        if (d) {
+          const ln = window.__lenis;
+          if (ln) ln.scrollTo(scrollY + d, { immediate: true, force: true });
+          else scrollBy(0, d);
+        }
+        if (!RM) {
+          panel.style.transition = "none";
+          panel.style.opacity = "0";
+          void panel.offsetHeight;
+          panel.style.transition = "opacity 200ms ease";
+          panel.style.opacity = "";
+        }
+        return;
+      }
+      card.style.opacity = "0";
+      card.style.filter = RM ? "" : "blur(2px)";
+      sw = setTimeout(() => {
+        fill();
         layout();
         card.style.opacity = "";
         card.style.filter = "";
@@ -3273,7 +3295,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.8";
+    window.__arborumAnim = "1.4.9";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

@@ -46,12 +46,20 @@ export default function initUseCases() {
       if (l) l.classList.toggle('is-active', on);
       if (ic) { ic.classList.toggle('is-active', on); ic.textContent = on ? '−' : '+' }
     });
-    card.style.opacity = '0'; card.style.filter = RM ? '' : 'blur(2px)'; clearTimeout(sw);
-    sw = setTimeout(() => {
-      const u = UC[i]; K.textContent = u.k; T.textContent = u.t; D.textContent = u.d;
-      if (photo) { photo.style.backgroundImage = 'url(' + CDN + u.m + ')'; photo.style.backgroundPosition = u.p }
-      layout(); card.style.opacity = ''; card.style.filter = '';
-    }, RM ? 0 : 220);
+    const fill = () => { const u = UC[i]; K.textContent = u.k; T.textContent = u.t; D.textContent = u.d; if (photo) { photo.style.backgroundImage = 'url(' + CDN + u.m + ')'; photo.style.backgroundPosition = u.p } };
+    clearTimeout(sw);
+    if (mq.matches) {
+      // Phones: the panel moves to sit under the tapped item. Swap everything at once and keep the tapped item
+      // exactly where the finger is (otherwise it jumps up by the panel's height), then fade the new content in.
+      const before = tabs[i].getBoundingClientRect().top;
+      fill(); layout();
+      const d = tabs[i].getBoundingClientRect().top - before;
+      if (d) { const ln = window.__lenis; if (ln) ln.scrollTo(scrollY + d, { immediate: true, force: true }); else scrollBy(0, d) }
+      if (!RM) { panel.style.transition = 'none'; panel.style.opacity = '0'; void panel.offsetHeight; panel.style.transition = 'opacity 200ms ease'; panel.style.opacity = '' }
+      return;
+    }
+    card.style.opacity = '0'; card.style.filter = RM ? '' : 'blur(2px)';
+    sw = setTimeout(() => { fill(); layout(); card.style.opacity = ''; card.style.filter = '' }, RM ? 0 : 220);
     layout();
   }
   const pick = j => { set(j); since = performance.now() };
