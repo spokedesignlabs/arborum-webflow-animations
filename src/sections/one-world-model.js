@@ -2,7 +2,7 @@
  * When the section comes into view, curved lines draw in from each dependency (left) to "One World Model",
  * then out to each decision (right). Small dots keep travelling along them. Hover an item to highlight
  * its line. Desktop and tablet only (not on phones).
- * Switch: oneWorldModel (off: no lines; the two lists and the title stay).
+ * Switch: oneWorldModel (off: the lines are drawn still: no draw-in and no travelling dots; hover still highlights a line).
  * Webflow elements: .home-owm_component > canvas.home-owm_lines, .home-owm_list ×2 (.home-owm_item), .home-owm_title
  */
 import { RM, ON, $, $$, clamp, DPR, debounce, onLoad, canvasIn } from '../core/utils.js';
@@ -14,7 +14,8 @@ const DOT_MS = 3200; // one trip of a dot along its line
 export default function initOneWorldModel() {
   const dep = $('.home-owm_component');
   const cv = canvasIn(dep, 'home-owm_lines');
-  if (!cv || !ON('oneWorldModel')) return;
+  if (!cv) return;
+  const STILL = RM || !ON('oneWorldModel'); // still lines: drawn in full straight away, no moving dots
   const lists = $$('.home-owm_list', dep), title = $('.home-owm_title', dep);
   if (lists.length < 2 || !title) return;
   cv.setAttribute('aria-hidden', 'true');
@@ -52,7 +53,7 @@ export default function initOneWorldModel() {
     let busy = false;
     for (let k = 0; k < lines.length; k++) {
       const l = lines[k], c = l.c;
-      const q = RM ? 1 : seenAt ? clamp((age - (l.side ? OUT_DELAY_MS : 0) - l.i * STAGGER_MS) / DRAW_MS) : 0;
+      const q = STILL ? 1 : seenAt ? clamp((age - (l.side ? OUT_DELAY_MS : 0) - l.i * STAGGER_MS) / DRAW_MS) : 0;
       if (q < 1) busy = true;
       if (q <= 0) continue;
       const e = q < .5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2; // ease in-out
@@ -62,7 +63,7 @@ export default function initOneWorldModel() {
       const lim = c.L * e; for (const p of c.pts) { if (p[2] > lim) { const m = at(c, lim); x.lineTo(m[0], m[1]); break } x.lineTo(p[0], p[1]) }
       x.stroke();
       // travelling dot
-      if (!RM && q >= 1) {
+      if (!STILL && q >= 1) {
         const u = (t / DOT_MS + l.i / 6 + (l.side ? .5 : 0)) % 1, p = at(c, c.L * u);
         x.globalAlpha = Math.sin(u * Math.PI); x.fillStyle = l.col;
         x.beginPath(); x.arc(p[0], p[1], 2.6, 0, 6.283); x.fill();
@@ -72,8 +73,8 @@ export default function initOneWorldModel() {
     return busy;
   }
 
-  function loop(t) { raf = 0; if (!on) return; draw(t); if (!RM) raf = requestAnimationFrame(loop) }
-  function kick() { if (RM) { draw(performance.now()); return } if (on && !raf) raf = requestAnimationFrame(loop) }
+  function loop(t) { raf = 0; if (!on) return; draw(t); if (!STILL) raf = requestAnimationFrame(loop) }
+  function kick() { if (STILL) { draw(performance.now()); return } if (on && !raf) raf = requestAnimationFrame(loop) }
 
   if ('IntersectionObserver' in window) new IntersectionObserver(e => { on = e[0].isIntersecting; if (on && !seenAt && e[0].intersectionRatio >= .3) seenAt = performance.now(); kick() }, { threshold: [0, .3] }).observe(dep);
   else { on = true; seenAt = 1 }

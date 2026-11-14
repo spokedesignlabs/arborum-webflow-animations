@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.2 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.3 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2268,7 +2268,8 @@
   function initOneWorldModel() {
     const dep = $(".home-owm_component");
     const cv = canvasIn(dep, "home-owm_lines");
-    if (!cv || !ON("oneWorldModel")) return;
+    if (!cv) return;
+    const STILL = RM || !ON("oneWorldModel");
     const lists = $$(".home-owm_list", dep), title = $(".home-owm_title", dep);
     if (lists.length < 2 || !title) return;
     cv.setAttribute("aria-hidden", "true");
@@ -2332,7 +2333,7 @@
       let busy = false;
       for (let k = 0; k < lines.length; k++) {
         const l = lines[k], c = l.c;
-        const q = RM ? 1 : seenAt ? clamp2((age - (l.side ? OUT_DELAY_MS : 0) - l.i * STAGGER_MS) / DRAW_MS) : 0;
+        const q = STILL ? 1 : seenAt ? clamp2((age - (l.side ? OUT_DELAY_MS : 0) - l.i * STAGGER_MS) / DRAW_MS) : 0;
         if (q < 1) busy = true;
         if (q <= 0) continue;
         const e = q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2;
@@ -2351,7 +2352,7 @@
           x.lineTo(p[0], p[1]);
         }
         x.stroke();
-        if (!RM && q >= 1) {
+        if (!STILL && q >= 1) {
           const u = (t / DOT_MS + l.i / 6 + (l.side ? 0.5 : 0)) % 1, p = at(c, c.L * u);
           x.globalAlpha = Math.sin(u * Math.PI);
           x.fillStyle = l.col;
@@ -2367,10 +2368,10 @@
       raf = 0;
       if (!on) return;
       draw(t);
-      if (!RM) raf = requestAnimationFrame(loop);
+      if (!STILL) raf = requestAnimationFrame(loop);
     }
     function kick() {
-      if (RM) {
+      if (STILL) {
         draw(performance.now());
         return;
       }
@@ -3260,7 +3261,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.2";
+    window.__arborumAnim = "1.4.3";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],
