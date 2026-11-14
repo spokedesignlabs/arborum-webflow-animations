@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.10 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.11 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2433,6 +2433,43 @@
       panel.style.backgroundImage = mq.matches ? "none" : "url(" + CDN + UC[cur2].i + ")";
       panel.style.backgroundPosition = UC[cur2].p;
     }
+    const ACC_MS = 320, ACC_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+    let ghost = null;
+    function accordion(fill) {
+      if (ghost) {
+        ghost.remove();
+        ghost = null;
+      }
+      const H = panel.offsetHeight, mb = getComputedStyle(panel).marginBottom, oldOrder = panel.style.order;
+      if (!RM) {
+        ghost = panel.cloneNode(true);
+        ghost.setAttribute("aria-hidden", "true");
+        ghost.removeAttribute("id");
+        Object.assign(ghost.style, { order: oldOrder, height: H + "px", overflow: "hidden", transition: "none", pointerEvents: "none" });
+        panel.parentElement.appendChild(ghost);
+      }
+      fill();
+      layout();
+      if (RM) return;
+      const h = panel.offsetHeight;
+      Object.assign(panel.style, { height: "0px", marginBottom: "0px", overflow: "hidden", opacity: "0", transition: "none" });
+      void panel.offsetHeight;
+      const tr = `height ${ACC_MS}ms ${ACC_EASE}, margin-bottom ${ACC_MS}ms ${ACC_EASE}, opacity ${ACC_MS}ms ease`;
+      Object.assign(panel.style, { transition: tr, height: h + "px", marginBottom: mb, opacity: "1" });
+      Object.assign(ghost.style, { transition: tr, height: "0px", marginBottom: "0px", opacity: "0" });
+      const g = ghost;
+      setTimeout(() => {
+        g.remove();
+        if (ghost === g) ghost = null;
+        ["height", "marginBottom", "overflow", "opacity", "transition"].forEach((k) => panel.style[k] = "");
+        const t = tabs[cur2].getBoundingClientRect().top;
+        if (t < 72) {
+          const y = scrollY + t - 80, ln = window.__lenis;
+          if (ln) ln.scrollTo(y, { duration: 0.5 });
+          else scrollTo({ top: y, behavior: "smooth" });
+        }
+      }, ACC_MS + 40);
+    }
     function set(i) {
       if (i === cur2) return;
       cur2 = i;
@@ -2459,23 +2496,7 @@
       };
       clearTimeout(sw);
       if (mq.matches) {
-        const before = tabs[i].getBoundingClientRect().top;
-        fill();
-        layout();
-        const d = tabs[i].getBoundingClientRect().top - before;
-        if (d) {
-          const y = scrollY + d;
-          scrollTo(0, y);
-          const ln = window.__lenis;
-          if (ln) ln.scrollTo(y, { immediate: true, force: true });
-        }
-        if (!RM) {
-          panel.style.transition = "none";
-          panel.style.opacity = "0";
-          void panel.offsetHeight;
-          panel.style.transition = "opacity 200ms ease";
-          panel.style.opacity = "";
-        }
+        accordion(fill);
         return;
       }
       card.style.opacity = "0";
@@ -3312,7 +3333,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.10";
+    window.__arborumAnim = "1.4.11";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

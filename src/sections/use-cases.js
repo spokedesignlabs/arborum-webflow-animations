@@ -2,7 +2,8 @@
  * Three tabs. Desktop and tablet: a thin bar fills along the top of the open tab over 7 seconds, then the
  * next tab opens (round and round) while the section is on screen. Clicking a tab opens it and starts its
  * 7 seconds again; the rotation carries on from there. Phones: a stacked list; the open item shows its photo
- * and text directly under it. No auto-switching on phones: tap an item to open it.
+ * and text directly under it, as an accordion: tapping an item folds the open one shut and unfolds the tapped one
+ * (no auto-switching on phones).
  * Switch: powerUseCases (off: no bar and no auto-switching; the tabs still work when clicked).
  * Webflow elements: .home-usecases_tab ×3 (each with .home-usecases_label, .home-usecases_icon,
  *   .home-usecases_progress), .home-usecases_panel (.home-usecases_card, .home-usecases_photo)
@@ -38,6 +39,36 @@ export default function initUseCases() {
     panel.style.backgroundImage = mq.matches ? 'none' : 'url(' + CDN + UC[cur].i + ')';
     panel.style.backgroundPosition = UC[cur].p;
   }
+  // Phones: a real accordion. The open item's content folds shut where it was while the tapped item's content
+  // unfolds under it, both at once, so nothing jumps; the page just slides smoothly. (One shared panel in Webflow:
+  // a copy of it folds shut in the old place while the real one, with the new content, opens in the new place.)
+  const ACC_MS = 320, ACC_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
+  let ghost = null;
+  function accordion(fill) {
+    if (ghost) { ghost.remove(); ghost = null }
+    const H = panel.offsetHeight, mb = getComputedStyle(panel).marginBottom, oldOrder = panel.style.order;
+    if (!RM) {
+      ghost = panel.cloneNode(true); ghost.setAttribute('aria-hidden', 'true'); ghost.removeAttribute('id');
+      Object.assign(ghost.style, { order: oldOrder, height: H + 'px', overflow: 'hidden', transition: 'none', pointerEvents: 'none' });
+      panel.parentElement.appendChild(ghost);
+    }
+    fill(); layout();
+    if (RM) return;
+    const h = panel.offsetHeight;
+    Object.assign(panel.style, { height: '0px', marginBottom: '0px', overflow: 'hidden', opacity: '0', transition: 'none' });
+    void panel.offsetHeight;
+    const tr = `height ${ACC_MS}ms ${ACC_EASE}, margin-bottom ${ACC_MS}ms ${ACC_EASE}, opacity ${ACC_MS}ms ease`;
+    Object.assign(panel.style, { transition: tr, height: h + 'px', marginBottom: mb, opacity: '1' });
+    Object.assign(ghost.style, { transition: tr, height: '0px', marginBottom: '0px', opacity: '0' });
+    const g = ghost;
+    setTimeout(() => {
+      g.remove(); if (ghost === g) ghost = null;
+      ['height', 'marginBottom', 'overflow', 'opacity', 'transition'].forEach(k => panel.style[k] = '');
+      // if the tapped item slid up under the header, bring it gently back into view
+      const t = tabs[cur].getBoundingClientRect().top;
+      if (t < 72) { const y = scrollY + t - 80, ln = window.__lenis; if (ln) ln.scrollTo(y, { duration: .5 }); else scrollTo({ top: y, behavior: 'smooth' }) }
+    }, ACC_MS + 40);
+  }
   function set(i) {
     if (i === cur) return; cur = i; since = performance.now();
     tabs.forEach((t, j) => {
@@ -48,16 +79,7 @@ export default function initUseCases() {
     });
     const fill = () => { const u = UC[i]; K.textContent = u.k; T.textContent = u.t; D.textContent = u.d; if (photo) { photo.style.backgroundImage = 'url(' + CDN + u.m + ')'; photo.style.backgroundPosition = u.p } };
     clearTimeout(sw);
-    if (mq.matches) {
-      // Phones: the panel moves to sit under the tapped item. Swap everything at once and keep the tapped item
-      // exactly where the finger is (otherwise it jumps up by the panel's height), then fade the new content in.
-      const before = tabs[i].getBoundingClientRect().top;
-      fill(); layout();
-      const d = tabs[i].getBoundingClientRect().top - before;
-      if (d) { const y = scrollY + d; scrollTo(0, y); const ln = window.__lenis; if (ln) ln.scrollTo(y, { immediate: true, force: true }) } // native first (iPhone browsers), then keep Lenis in step
-      if (!RM) { panel.style.transition = 'none'; panel.style.opacity = '0'; void panel.offsetHeight; panel.style.transition = 'opacity 200ms ease'; panel.style.opacity = '' }
-      return;
-    }
+    if (mq.matches) { accordion(fill); return }
     card.style.opacity = '0'; card.style.filter = RM ? '' : 'blur(2px)';
     sw = setTimeout(() => { fill(); layout(); card.style.opacity = ''; card.style.filter = '' }, RM ? 0 : 220);
     layout();
