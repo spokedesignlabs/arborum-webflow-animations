@@ -1,5 +1,5 @@
 /* Beyond Energy
- * A long pinned section (the Webflow section is 420vh with a sticky inner block).
+ * A long pinned section (the Webflow section is 300vh, 540vh on phones, with a sticky inner block).
  *  - Canvas: threads fall in from above, then the camera flies through three network shapes:
  *    a flat channel (Energy) -> a tunnel (Telecom) -> a constellation (Other networks). The background tint follows.
  *  - Three chapters of equal length (Energy, Telecom, Other networks). Each holds its shape; the change happens
@@ -38,11 +38,17 @@ function initCopy(bs){
  function tick(){const r=bs.getBoundingClientRect(),p=clamp(-r.top/Math.max(1,r.height-innerHeight));set(Math.round(chapter(p)))}
  addEventListener('scroll',tick,{passive:true});tick();
  // settle: when scrolling stops part-way through, glide to the nearest chapter
- let st=0,gliding=false;
+ // Touch: one swipe moves at most one chapter (a flick on a phone used to fly past Telecom). The chapter is noted when
+ // the finger goes down; when the swipe and its momentum stop, the glide lands on that chapter or the next/previous one.
+ let st=0,gliding=false,fromCh=null;
+ const progress=()=>{const r=bs.getBoundingClientRect();return -r.top/Math.max(1,r.height-innerHeight)};
+ addEventListener('touchstart',()=>{const p=progress();fromCh=p>0&&p<1?Math.round(chapter(clamp(p))):null},{passive:true});
  addEventListener('scroll',()=>{clearTimeout(st);if(gliding||RM)return;st=setTimeout(()=>{
   const r=bs.getBoundingClientRect(),travel=Math.max(1,r.height-innerHeight),p=-r.top/travel;
-  if(p<.08||p>.92)return; // entering or leaving the section: let it go
-  const target=SETTLE.reduce((a,b)=>Math.abs(b-p)<Math.abs(a-p)?b:a),y=r.top+scrollY+target*travel;
+  if(p<.08||p>.92){fromCh=null;return} // entering or leaving the section: let it go
+  let k=SETTLE.reduce((a,b,j)=>Math.abs(b-p)<Math.abs(SETTLE[a]-p)?j:a,0);
+  if(fromCh!=null)k=Math.max(fromCh-1,Math.min(fromCh+1,k)); fromCh=null;
+  const target=SETTLE[k],y=r.top+scrollY+target*travel;
   if(Math.abs((target-p)*travel)<6)return;
   const l=getLenis();gliding=true;
   if(l)l.scrollTo(y,{duration:SETTLE_S,onComplete:()=>{gliding=false}});else{scrollTo({top:y,behavior:'smooth'});setTimeout(()=>gliding=false,SETTLE_S*1000)}

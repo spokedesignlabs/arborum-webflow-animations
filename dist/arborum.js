@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.9 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.10 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2464,9 +2464,10 @@
         layout();
         const d = tabs[i].getBoundingClientRect().top - before;
         if (d) {
+          const y = scrollY + d;
+          scrollTo(0, y);
           const ln = window.__lenis;
-          if (ln) ln.scrollTo(scrollY + d, { immediate: true, force: true });
-          else scrollBy(0, d);
+          if (ln) ln.scrollTo(y, { immediate: true, force: true });
         }
         if (!RM) {
           panel.style.transition = "none";
@@ -2499,6 +2500,8 @@
     });
     mq.addEventListener("change", layout);
     layout();
+    const sec = panel.closest("section");
+    if (sec) sec.style.overflowAnchor = "none";
     new IntersectionObserver((es) => {
       const v = es[0].isIntersecting;
       if (v && !vis) since = performance.now();
@@ -2568,14 +2571,28 @@
     }
     addEventListener("scroll", tick, { passive: true });
     tick();
-    let st = 0, gliding = false;
+    let st = 0, gliding = false, fromCh = null;
+    const progress = () => {
+      const r = bs.getBoundingClientRect();
+      return -r.top / Math.max(1, r.height - innerHeight);
+    };
+    addEventListener("touchstart", () => {
+      const p = progress();
+      fromCh = p > 0 && p < 1 ? Math.round(chapter(clamp2(p))) : null;
+    }, { passive: true });
     addEventListener("scroll", () => {
       clearTimeout(st);
       if (gliding || RM) return;
       st = setTimeout(() => {
         const r = bs.getBoundingClientRect(), travel = Math.max(1, r.height - innerHeight), p = -r.top / travel;
-        if (p < 0.08 || p > 0.92) return;
-        const target = SETTLE.reduce((a, b) => Math.abs(b - p) < Math.abs(a - p) ? b : a), y = r.top + scrollY + target * travel;
+        if (p < 0.08 || p > 0.92) {
+          fromCh = null;
+          return;
+        }
+        let k = SETTLE.reduce((a, b, j) => Math.abs(b - p) < Math.abs(SETTLE[a] - p) ? j : a, 0);
+        if (fromCh != null) k = Math.max(fromCh - 1, Math.min(fromCh + 1, k));
+        fromCh = null;
+        const target = SETTLE[k], y = r.top + scrollY + target * travel;
         if (Math.abs((target - p) * travel) < 6) return;
         const l = getLenis();
         gliding = true;
@@ -3295,7 +3312,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.9";
+    window.__arborumAnim = "1.4.10";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

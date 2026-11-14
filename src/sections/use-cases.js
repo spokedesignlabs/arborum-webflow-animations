@@ -54,7 +54,7 @@ export default function initUseCases() {
       const before = tabs[i].getBoundingClientRect().top;
       fill(); layout();
       const d = tabs[i].getBoundingClientRect().top - before;
-      if (d) { const ln = window.__lenis; if (ln) ln.scrollTo(scrollY + d, { immediate: true, force: true }); else scrollBy(0, d) }
+      if (d) { const y = scrollY + d; scrollTo(0, y); const ln = window.__lenis; if (ln) ln.scrollTo(y, { immediate: true, force: true }) } // native first (iPhone browsers), then keep Lenis in step
       if (!RM) { panel.style.transition = 'none'; panel.style.opacity = '0'; void panel.offsetHeight; panel.style.transition = 'opacity 200ms ease'; panel.style.opacity = '' }
       return;
     }
@@ -69,6 +69,8 @@ export default function initUseCases() {
     keyable(t, () => pick(j));
   });
   mq.addEventListener('change', layout); layout();
+  // the script keeps the tapped item in place itself, so the browser's own scroll anchoring must not add a second shift
+  const sec = panel.closest('section'); if (sec) sec.style.overflowAnchor = 'none';
 
   new IntersectionObserver(es => { const v = es[0].isIntersecting; if (v && !vis) since = performance.now(); vis = v }, { threshold: .3 }).observe(panel);
 
