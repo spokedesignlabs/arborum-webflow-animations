@@ -5,7 +5,8 @@
  *  - On its own, it runs through the options one by one every 4 seconds with the same wave and "Affected"
  *    tags (no info window). Clicking an option starts the 4 seconds again from that option.
  *  - Phones show six options in their own spaced-out layout (TAGS_PHONE).
- * Switch: worldModel (off: the static network picture and the options in their Webflow positions).
+ * Switch: worldModel (off: the static network picture and the options in their Webflow positions; clicking an
+ *   option still opens its info window, just without the wave and "Affected" tags).
  * Webflow elements: .home-world_network > canvas.home-world_canvas, .home-world_chip ×10
  *   (each chip holds its label text and a .home-world_affected tag, which sits just above the chip)
  */
@@ -47,7 +48,9 @@ const label = el => [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.
 export default function initWorldModel() {
   const pg = $('.home-world_network');
   const cv = canvasIn(pg, 'home-world_canvas');
-  if (!cv || !ON('worldModel')) return;
+  if (!pg) return;
+  if (!ON('worldModel')) return infoOnly(pg);
+  if (!cv) return;
   cv.setAttribute('aria-hidden', 'true');
   pg.style.backgroundImage = 'none'; // the static network picture is only for when this animation is off
   const phone = matchMedia('(max-width:767px)');
@@ -129,4 +132,18 @@ export default function initWorldModel() {
   addEventListener('resize', debounce(() => wm.build()));
   phone.addEventListener('change', () => wm.build());
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => wm.build());
+}
+
+// Animation switched off: the options stay where Webflow puts them, and a click (or Enter) still opens the info window.
+function infoOnly(pg) {
+  $$('.home-world_chip', pg).forEach(el => {
+    const k = label(el); if (!INFO[k]) return;
+    el.setAttribute('role', 'button'); el.setAttribute('aria-haspopup', 'dialog');
+    if (!el.hasAttribute('tabindex')) el.tabIndex = 0;
+    el.style.cursor = 'pointer';
+    const look = on => Object.assign(el.style, LOOK[on ? 'open' : 'rest']);
+    const open = e => { if (e) e.stopPropagation(); look(true); openWindow(el, { t: k, p: INFO[k] }, { wide: true, width: 520, align: 'center', step: 450, onClose: () => look(false) }) };
+    el.addEventListener('click', open);
+    keyable(el, open);
+  });
 }

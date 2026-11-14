@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.1 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.2 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2882,7 +2882,9 @@
   function initWorldModel() {
     const pg = $(".home-world_network");
     const cv = canvasIn(pg, "home-world_canvas");
-    if (!cv || !ON("worldModel")) return;
+    if (!pg) return;
+    if (!ON("worldModel")) return infoOnly(pg);
+    if (!cv) return;
     cv.setAttribute("aria-hidden", "true");
     pg.style.backgroundImage = "none";
     const phone = matchMedia("(max-width:767px)");
@@ -2990,6 +2992,24 @@
     addEventListener("resize", debounce2(() => wm.build()));
     phone.addEventListener("change", () => wm.build());
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => wm.build());
+  }
+  function infoOnly(pg) {
+    $$(".home-world_chip", pg).forEach((el) => {
+      const k = label(el);
+      if (!INFO[k]) return;
+      el.setAttribute("role", "button");
+      el.setAttribute("aria-haspopup", "dialog");
+      if (!el.hasAttribute("tabindex")) el.tabIndex = 0;
+      el.style.cursor = "pointer";
+      const look = (on) => Object.assign(el.style, LOOK[on ? "open" : "rest"]);
+      const open = (e) => {
+        if (e) e.stopPropagation();
+        look(true);
+        openWindow(el, { t: k, p: INFO[k] }, { wide: true, width: 520, align: "center", step: 450, onClose: () => look(false) });
+      };
+      el.addEventListener("click", open);
+      keyable(el, open);
+    });
   }
 
   // src/sections/about-network.js
@@ -3240,7 +3260,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.1";
+    window.__arborumAnim = "1.4.2";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],
