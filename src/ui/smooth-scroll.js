@@ -1,7 +1,7 @@
 /* Smooth scrolling and in-page links
  *  - Lenis gives the page the soft, eased scrolling (wheel and trackpad). Touch scrolling stays native.
  *  - Every in-page link glides to its section instead of jumping:
- *      hero button      → the "One World Model" section, just after the Energy story (as in the design)
+ *      hero button      → part-way into the pinned Energy section, where "01 · Our first frontier" shows
  *      header "Energy"  → part-way into the pinned Energy section, where the text is showing
  *      header "Beyond Energy" → the start of the Beyond Energy story
  *      footer links     → their section (also works when arriving from the About page)
@@ -43,21 +43,16 @@ export default function initSmoothScroll() {
   // In-page links. This listens before anything else on the page (capture phase) and stops the click there,
   // because Webflow's own anchor scrolling ignores "prevented" clicks: it would jump to the link's section
   // first and then this glide would pull the page on, which looks like a sudden jump (seen on phones).
-  const heroBtn = $('.section_home-hero .button');
-  const owm = $('.section_home-owm');
+  // (The hero button links to #energy in Webflow, so it lands on "01 · Our first frontier", same as the header "Energy".)
   addEventListener('click', e => {
     const a = e.target.closest && e.target.closest('a[href*="#"]');
     if (!a) return;
-    let y = null;
-    if (a === heroBtn && owm) y = owm.getBoundingClientRect().top + scrollY - 40; // hero button: past the Energy story to One World Model
-    else {
-      const url = new URL(a.href, location.href);
-      if (url.pathname !== location.pathname || url.hash.length < 2) return;
-      y = targetY(url.hash);
-      if (y == null) return;
-      history.replaceState(null, '', url.hash);
-    }
+    const url = new URL(a.href, location.href);
+    if (url.pathname !== location.pathname || url.hash.length < 2) return;
+    const y = targetY(url.hash);
+    if (y == null) return;
     e.preventDefault(); e.stopPropagation();
+    history.replaceState(null, '', url.hash);
     scrollToY(y);
   }, true);
 

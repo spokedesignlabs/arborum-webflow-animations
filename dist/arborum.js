@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.5 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.6 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -1091,22 +1091,16 @@
       })(performance.now());
       window.__lenis = lenis;
     }
-    const heroBtn = $(".section_home-hero .button");
-    const owm = $(".section_home-owm");
     addEventListener("click", (e) => {
       const a = e.target.closest && e.target.closest('a[href*="#"]');
       if (!a) return;
-      let y = null;
-      if (a === heroBtn && owm) y = owm.getBoundingClientRect().top + scrollY - 40;
-      else {
-        const url = new URL(a.href, location.href);
-        if (url.pathname !== location.pathname || url.hash.length < 2) return;
-        y = targetY(url.hash);
-        if (y == null) return;
-        history.replaceState(null, "", url.hash);
-      }
+      const url = new URL(a.href, location.href);
+      if (url.pathname !== location.pathname || url.hash.length < 2) return;
+      const y = targetY(url.hash);
+      if (y == null) return;
       e.preventDefault();
       e.stopPropagation();
+      history.replaceState(null, "", url.hash);
       scrollToY(y);
     }, true);
     if (location.hash.length > 1) addEventListener("load", () => setTimeout(() => {
@@ -3272,7 +3266,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.5";
+    window.__arborumAnim = "1.4.6";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],
