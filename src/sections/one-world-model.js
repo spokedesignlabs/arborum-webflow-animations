@@ -1,7 +1,8 @@
 /* One World Model: threads in, threads out
  * When the section comes into view, curved lines draw in from each dependency (left) to "One World Model",
  * then out to each decision (right). Small dots keep travelling along them. Hover an item to highlight
- * its line. Desktop and tablet only (not on phones).
+ * its line. Phones: the same picture turned 90°: dependencies along the top, decisions along the bottom, and the
+ * lines run down into "One World Model" and out of it (the phone layout itself is set in Webflow).
  * Switch: oneWorldModel (off: the lines are drawn still: no draw-in and no travelling dots; hover still highlights a line).
  * Webflow elements: .home-owm_component > canvas.home-owm_lines, .home-owm_list ×2 (.home-owm_item), .home-owm_title
  */
@@ -22,11 +23,12 @@ export default function initOneWorldModel() {
   let x = null, W = 0, H = 0, lines = [], on = false, seenAt = 0, hot = -1, raf = 0;
 
   // cubic curve from (x0,y0) to (x1,y1), sampled so it can be drawn part of the way
-  function curve(x0, y0, x1, y1) {
-    const mx = (x0 + x1) / 2, pts = []; let L = 0;
+  // (down = true: the curve leaves and arrives vertically, for the phone layout)
+  function curve(x0, y0, x1, y1, down) {
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, pts = []; let L = 0;
     for (let k = 0; k <= 48; k++) {
       const u = k / 48, v = 1 - u;
-      const p = [v * v * v * x0 + 3 * v * v * u * mx + 3 * v * u * u * mx + u * u * u * x1, v * v * v * y0 + 3 * v * v * u * y0 + 3 * v * u * u * y1 + u * u * u * y1];
+      const p = down ? [v * v * v * x0 + 3 * v * v * u * x0 + 3 * v * u * u * x1 + u * u * u * x1, v * v * v * y0 + 3 * v * v * u * my + 3 * v * u * u * my + u * u * u * y1] : [v * v * v * x0 + 3 * v * v * u * mx + 3 * v * u * u * mx + u * u * u * x1, v * v * v * y0 + 3 * v * v * u * y0 + 3 * v * u * u * y1 + u * u * u * y1];
       if (k) L += Math.hypot(p[0] - pts[k - 1][0], p[1] - pts[k - 1][1]);
       pts.push([p[0], p[1], L]);
     }
@@ -38,8 +40,14 @@ export default function initOneWorldModel() {
     const r = dep.getBoundingClientRect();
     lines = []; W = r.width; H = r.height;
     cv.width = W * DPR; cv.height = H * DPR; x = cv.getContext('2d'); x.setTransform(DPR, 0, 0, DPR, 0, 0);
-    if (!W || innerWidth < 768) { x.clearRect(0, 0, W, H); return }
+    if (!W) return;
     const ct = title.getBoundingClientRect(), cy = ct.top - r.top + ct.height / 2, lx = ct.left - r.left - 18, rx = ct.right - r.left + 18;
+    if (innerWidth < 768) { // phones: top list → title → bottom list
+      const cx = ct.left - r.left + ct.width / 2, ty = ct.top - r.top - 10, by = ct.bottom - r.top + 10;
+      $$('.home-owm_item', lists[0]).forEach((s, i) => { const b = s.getBoundingClientRect(); lines.push({ el: s, c: curve(b.left - r.left + b.width / 2, b.bottom - r.top + 6, cx, ty, true), col: IN, i, side: 0 }) });
+      $$('.home-owm_item', lists[1]).forEach((s, i) => { const b = s.getBoundingClientRect(); lines.push({ el: s, c: curve(cx, by, b.left - r.left + b.width / 2, b.top - r.top - 6, true), col: OUT, i, side: 1 }) });
+      kick(); return;
+    }
     $$('.home-owm_item', lists[0]).forEach((s, i) => { const b = s.getBoundingClientRect(); lines.push({ el: s, c: curve(b.right - r.left + 14, b.top - r.top + b.height / 2, lx, cy), col: IN, i, side: 0 }) });
     $$('.home-owm_item', lists[1]).forEach((s, i) => { const b = s.getBoundingClientRect(); lines.push({ el: s, c: curve(rx, cy, b.left - r.left - 14, b.top - r.top + b.height / 2), col: OUT, i, side: 1 }) });
     lines.forEach((l, k) => { l.el.onmouseenter = () => { hot = k; kick() }; l.el.onmouseleave = () => { hot = -1; kick() } });

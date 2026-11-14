@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.3 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.4 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2274,12 +2274,12 @@
     if (lists.length < 2 || !title) return;
     cv.setAttribute("aria-hidden", "true");
     let x = null, W = 0, H = 0, lines = [], on = false, seenAt = 0, hot = -1, raf = 0;
-    function curve(x0, y0, x1, y1) {
-      const mx = (x0 + x1) / 2, pts = [];
+    function curve(x0, y0, x1, y1, down) {
+      const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, pts = [];
       let L2 = 0;
       for (let k = 0; k <= 48; k++) {
         const u = k / 48, v = 1 - u;
-        const p = [v * v * v * x0 + 3 * v * v * u * mx + 3 * v * u * u * mx + u * u * u * x1, v * v * v * y0 + 3 * v * v * u * y0 + 3 * v * u * u * y1 + u * u * u * y1];
+        const p = down ? [v * v * v * x0 + 3 * v * v * u * x0 + 3 * v * u * u * x1 + u * u * u * x1, v * v * v * y0 + 3 * v * v * u * my + 3 * v * u * u * my + u * u * u * y1] : [v * v * v * x0 + 3 * v * v * u * mx + 3 * v * u * u * mx + u * u * u * x1, v * v * v * y0 + 3 * v * v * u * y0 + 3 * v * u * u * y1 + u * u * u * y1];
         if (k) L2 += Math.hypot(p[0] - pts[k - 1][0], p[1] - pts[k - 1][1]);
         pts.push([p[0], p[1], L2]);
       }
@@ -2301,11 +2301,21 @@
       cv.height = H * DPR;
       x = cv.getContext("2d");
       x.setTransform(DPR, 0, 0, DPR, 0, 0);
-      if (!W || innerWidth < 768) {
-        x.clearRect(0, 0, W, H);
+      if (!W) return;
+      const ct = title.getBoundingClientRect(), cy = ct.top - r.top + ct.height / 2, lx = ct.left - r.left - 18, rx = ct.right - r.left + 18;
+      if (innerWidth < 768) {
+        const cx = ct.left - r.left + ct.width / 2, ty = ct.top - r.top - 10, by = ct.bottom - r.top + 10;
+        $$(".home-owm_item", lists[0]).forEach((s, i) => {
+          const b = s.getBoundingClientRect();
+          lines.push({ el: s, c: curve(b.left - r.left + b.width / 2, b.bottom - r.top + 6, cx, ty, true), col: IN2, i, side: 0 });
+        });
+        $$(".home-owm_item", lists[1]).forEach((s, i) => {
+          const b = s.getBoundingClientRect();
+          lines.push({ el: s, c: curve(cx, by, b.left - r.left + b.width / 2, b.top - r.top - 6, true), col: OUT2, i, side: 1 });
+        });
+        kick();
         return;
       }
-      const ct = title.getBoundingClientRect(), cy = ct.top - r.top + ct.height / 2, lx = ct.left - r.left - 18, rx = ct.right - r.left + 18;
       $$(".home-owm_item", lists[0]).forEach((s, i) => {
         const b = s.getBoundingClientRect();
         lines.push({ el: s, c: curve(b.right - r.left + 14, b.top - r.top + b.height / 2, lx, cy), col: IN2, i, side: 0 });
@@ -2412,7 +2422,7 @@
     }));
     card.style.transition = "opacity 220ms ease, filter 220ms ease";
     const autoOn = ON("powerUseCases");
-    const auto = () => autoOn && vis && !RM && !mq.matches && !document.hidden;
+    const auto = () => autoOn && vis && !RM && !document.hidden;
     function layout() {
       tabs.forEach((t, j) => {
         t.style.order = mq.matches ? String(j <= cur2 ? j * 2 : j * 2 + 2) : "";
@@ -2478,12 +2488,12 @@
           set((cur2 + 1) % 3);
           p = 0;
         }
-      } else if (autoOn && !mq.matches) {
+      } else if (autoOn) {
         since = t;
         p = 0;
       }
       bars.forEach((b, j) => {
-        if (b) b.style.transform = "scaleX(" + (j === cur2 ? !autoOn || mq.matches || RM ? 1 : p : 0) + ")";
+        if (b) b.style.transform = "scaleX(" + (j === cur2 ? !autoOn || RM ? 1 : p : 0) + ")";
       });
       requestAnimationFrame(loop);
     })(performance.now());
@@ -3261,7 +3271,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.3";
+    window.__arborumAnim = "1.4.4";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

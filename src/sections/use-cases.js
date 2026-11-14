@@ -2,7 +2,7 @@
  * Three tabs. Desktop and tablet: a thin bar fills along the top of the open tab over 7 seconds, then the
  * next tab opens (round and round) while the section is on screen. Clicking a tab opens it and starts its
  * 7 seconds again; the rotation carries on from there. Phones: a stacked list; the open item shows its photo
- * and text directly under it (no auto-rotate).
+ * and text directly under it, and it rotates the same way (bar along the top of the open item).
  * Switch: powerUseCases (off: no bar and no auto-switching; the tabs still work when clicked).
  * Webflow elements: .home-usecases_tab ×3 (each with .home-usecases_label, .home-usecases_icon,
  *   .home-usecases_progress), .home-usecases_panel (.home-usecases_card, .home-usecases_photo)
@@ -30,7 +30,7 @@ export default function initUseCases() {
   card.style.transition = 'opacity 220ms ease, filter 220ms ease'; // a light blur bridges old and new text
 
   const autoOn = ON('powerUseCases');
-  const auto = () => autoOn && vis && !RM && !mq.matches && !document.hidden;
+  const auto = () => autoOn && vis && !RM && !document.hidden;
   // phones: the panel sits right under the open tab, and the photo sits above the text (never behind it)
   function layout() {
     tabs.forEach((t, j) => { t.style.order = mq.matches ? String(j <= cur ? j * 2 : j * 2 + 2) : '' });
@@ -68,8 +68,8 @@ export default function initUseCases() {
   (function loop(t) {
     let p = 1;
     if (auto()) { p = Math.min(1, (t - since) / ROTATE_MS); if (p >= 1) { set((cur + 1) % 3); p = 0 } }
-    else if (autoOn && !mq.matches) { since = t; p = 0 } // paused off screen: start again from empty
-    bars.forEach((b, j) => { if (b) b.style.transform = 'scaleX(' + (j === cur ? (!autoOn || mq.matches || RM ? 1 : p) : 0) + ')' });
+    else if (autoOn) { since = t; p = 0 } // paused off screen: start again from empty
+    bars.forEach((b, j) => { if (b) b.style.transform = 'scaleX(' + (j === cur ? (!autoOn || RM ? 1 : p) : 0) + ')' });
     requestAnimationFrame(loop);
   })(performance.now());
 }
