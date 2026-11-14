@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.0 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.1 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -1994,8 +1994,11 @@
     if (!hero || !bridge || !stage) return;
     const ph = $(".home-energy_photo", stage), scrim = $(".home-energy_scrim", stage), pad = $(".home-energy_padding", stage);
     const heading = bridge.querySelector("h2");
-    const hl = $(".home-statement_highlight", bridge);
-    if (hl) makeTrigger(hl, CRITICAL, { width: 440 });
+    const POPUP_ON = false;
+    if (POPUP_ON) {
+      const hl = $(".home-statement_highlight", bridge);
+      if (hl) makeTrigger(hl, CRITICAL, { width: 440 });
+    }
     const phone = matchMedia("(max-width:767px)");
     const pinStyle = () => Object.assign(pin.style, { height: phone.matches ? PIN.phone : PIN.desktop, minHeight: "0", padding: "0", overflow: "visible", display: "block", backgroundColor: "#F3F2EE" });
     if (!RM) {
@@ -3237,7 +3240,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.0";
+    window.__arborumAnim = "1.4.1";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

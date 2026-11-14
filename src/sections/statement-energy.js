@@ -7,7 +7,7 @@
  *  3. The threads continue on the photo and land on the three tower tops.
  *  4. The "01 · Our first frontier / Energy" title, then the heading, then the paragraph fade in.
  *  5. (Tower points with info cards: switched off — see "Tower points and card" below.)
- *  6. "critical decisions" opens an info window.
+ *  6. ("critical decisions" info window: switched off at the client's request. The phrase keeps its hover underline.)
  *
  * Webflow elements (all styled in Webflow):
  *   canvas.home-statement_threads   first child of .main-wrapper (threads over the hero and statement)
@@ -47,9 +47,10 @@ export default function initStatementEnergy() {
   const ph = $('.home-energy_photo', stage), scrim = $('.home-energy_scrim', stage), pad = $('.home-energy_padding', stage);
   const heading = bridge.querySelector('h2');
 
-  // "critical decisions" → info window
-  const hl = $('.home-statement_highlight', bridge);
-  if (hl) makeTrigger(hl, CRITICAL, { width: 440 });
+  // "critical decisions" info window: switched off (the phrase keeps its hover underline from Webflow).
+  // To bring it back: const hl = $('.home-statement_highlight', bridge); if (hl) makeTrigger(hl, CRITICAL, { width: 440 });
+  const POPUP_ON = false;
+  if (POPUP_ON) { const hl = $('.home-statement_highlight', bridge); if (hl) makeTrigger(hl, CRITICAL, { width: 440 }) }
 
   // ---- Pin (only while the script runs) ----
   const phone = matchMedia('(max-width:767px)');
