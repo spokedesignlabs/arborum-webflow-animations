@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.4 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.5 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -1093,21 +1093,22 @@
     }
     const heroBtn = $(".section_home-hero .button");
     const owm = $(".section_home-owm");
-    if (heroBtn && owm) heroBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      scrollToY(owm.getBoundingClientRect().top + scrollY - 40);
-    });
-    document.addEventListener("click", (e) => {
+    addEventListener("click", (e) => {
       const a = e.target.closest && e.target.closest('a[href*="#"]');
-      if (!a || e.defaultPrevented || a === heroBtn) return;
-      const url = new URL(a.href, location.href);
-      if (url.pathname !== location.pathname || url.hash.length < 2) return;
-      const y = targetY(url.hash);
-      if (y == null) return;
+      if (!a) return;
+      let y = null;
+      if (a === heroBtn && owm) y = owm.getBoundingClientRect().top + scrollY - 40;
+      else {
+        const url = new URL(a.href, location.href);
+        if (url.pathname !== location.pathname || url.hash.length < 2) return;
+        y = targetY(url.hash);
+        if (y == null) return;
+        history.replaceState(null, "", url.hash);
+      }
       e.preventDefault();
-      history.replaceState(null, "", url.hash);
+      e.stopPropagation();
       scrollToY(y);
-    });
+    }, true);
     if (location.hash.length > 1) addEventListener("load", () => setTimeout(() => {
       const y = targetY(location.hash);
       if (y != null) {
@@ -3271,7 +3272,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.4";
+    window.__arborumAnim = "1.4.5";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

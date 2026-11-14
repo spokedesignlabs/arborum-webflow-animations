@@ -40,23 +40,26 @@ export default function initSmoothScroll() {
     window.__lenis = lenis;
   }
 
-  // hero button: past the Energy story to One World Model
+  // In-page links. This listens before anything else on the page (capture phase) and stops the click there,
+  // because Webflow's own anchor scrolling ignores "prevented" clicks: it would jump to the link's section
+  // first and then this glide would pull the page on, which looks like a sudden jump (seen on phones).
   const heroBtn = $('.section_home-hero .button');
   const owm = $('.section_home-owm');
-  if (heroBtn && owm) heroBtn.addEventListener('click', e => { e.preventDefault(); scrollToY(owm.getBoundingClientRect().top + scrollY - 40) });
-
-  // any other link to a section on this page
-  document.addEventListener('click', e => {
+  addEventListener('click', e => {
     const a = e.target.closest && e.target.closest('a[href*="#"]');
-    if (!a || e.defaultPrevented || a === heroBtn) return;
-    const url = new URL(a.href, location.href);
-    if (url.pathname !== location.pathname || url.hash.length < 2) return;
-    const y = targetY(url.hash);
-    if (y == null) return;
-    e.preventDefault();
-    history.replaceState(null, '', url.hash);
+    if (!a) return;
+    let y = null;
+    if (a === heroBtn && owm) y = owm.getBoundingClientRect().top + scrollY - 40; // hero button: past the Energy story to One World Model
+    else {
+      const url = new URL(a.href, location.href);
+      if (url.pathname !== location.pathname || url.hash.length < 2) return;
+      y = targetY(url.hash);
+      if (y == null) return;
+      history.replaceState(null, '', url.hash);
+    }
+    e.preventDefault(); e.stopPropagation();
     scrollToY(y);
-  });
+  }, true);
 
   // arriving with a hash (e.g. /#beyond from the About page)
   if (location.hash.length > 1) addEventListener('load', () => setTimeout(() => { const y = targetY(location.hash); if (y != null) { if (lenis) lenis.scrollTo(y, { immediate: true }); else scrollTo(0, y) } }, 350));
