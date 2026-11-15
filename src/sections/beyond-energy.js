@@ -14,7 +14,7 @@
 import {getLenis} from '../ui/smooth-scroll.js';
 import {RM,ON,$,$$,clamp,mix,rgba,rnd,setSeed,fit,visible,debounce,lift,canvasIn,NAVY,DEEP,VIO} from '../core/utils.js';
 
-const COPY=[['Different networks. Endless possibilities.','The world’s most critical systems — telecom, finance, logistics and beyond — are complex networks of interconnected systems. We are extending World Model beyond energy to understand them, anticipate problems and discover better solutions.'],
+const COPY=[['Different networks. Endless possibilities.','The world’s most critical systems (telecom, finance, logistics and beyond) are complex networks of interconnected systems. We are extending World Model beyond energy to understand them, anticipate problems and discover better solutions.'],
  ['Understanding networks. Improving how they operate.','We are extending our World Models to telecom networks, spanning infrastructure asset management and network operations. By modelling how interconnected network components behave, we aim to help operators make better decisions across increasingly complex and distributed systems.'],
  ['A world model for every complex network.','From data centres to logistics and other critical infrastructure, we see an opportunity to apply the same underlying technology to systems where multiple assets, constraints and decisions interact. We are building towards a future where complex networks can be modelled, simulated and optimised through a common intelligence layer.']];
 // The pinned scroll is three equal chapters: Energy, Telecom, Other networks. Each chapter holds its shape;

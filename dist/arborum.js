@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.12 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.13 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2600,7 +2600,7 @@
 
   // src/sections/beyond-energy.js
   var COPY = [
-    ["Different networks. Endless possibilities.", "The world\u2019s most critical systems \u2014 telecom, finance, logistics and beyond \u2014 are complex networks of interconnected systems. We are extending World Model beyond energy to understand them, anticipate problems and discover better solutions."],
+    ["Different networks. Endless possibilities.", "The world\u2019s most critical systems (telecom, finance, logistics and beyond) are complex networks of interconnected systems. We are extending World Model beyond energy to understand them, anticipate problems and discover better solutions."],
     ["Understanding networks. Improving how they operate.", "We are extending our World Models to telecom networks, spanning infrastructure asset management and network operations. By modelling how interconnected network components behave, we aim to help operators make better decisions across increasingly complex and distributed systems."],
     ["A world model for every complex network.", "From data centres to logistics and other critical infrastructure, we see an opportunity to apply the same underlying technology to systems where multiple assets, constraints and decisions interact. We are building towards a future where complex networks can be modelled, simulated and optimised through a common intelligence layer."]
   ];
@@ -3384,7 +3384,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.12";
+    window.__arborumAnim = "1.4.13";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],
