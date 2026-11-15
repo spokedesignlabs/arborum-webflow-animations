@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.11 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.12 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2426,6 +2426,14 @@
     const autoOn = ON("powerUseCases");
     const auto = () => autoOn && vis && !RM && !mq.matches && !document.hidden;
     function layout() {
+      if (cur2 < 0 && !mq.matches) return set(0);
+      panel.style.display = cur2 < 0 ? "none" : "";
+      if (cur2 < 0) {
+        tabs.forEach((t, j) => {
+          t.style.order = String(j * 2);
+        });
+        return;
+      }
       tabs.forEach((t, j) => {
         t.style.order = mq.matches ? String(j <= cur2 ? j * 2 : j * 2 + 2) : "";
       });
@@ -2435,12 +2443,27 @@
     }
     const ACC_MS = 320, ACC_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
     let ghost = null;
-    function accordion(fill) {
+    let closing = 0;
+    const clearAnim = () => ["height", "marginBottom", "overflow", "opacity", "transition"].forEach((k) => panel.style[k] = "");
+    function accordion(fill, from) {
       if (ghost) {
         ghost.remove();
         ghost = null;
       }
+      clearTimeout(closing);
+      clearAnim();
       const H = panel.offsetHeight, mb = getComputedStyle(panel).marginBottom, oldOrder = panel.style.order;
+      if (from < 0) {
+        fill();
+        layout();
+        if (RM) return;
+        const h2 = panel.offsetHeight;
+        Object.assign(panel.style, { height: "0px", marginBottom: "0px", overflow: "hidden", opacity: "0", transition: "none" });
+        void panel.offsetHeight;
+        Object.assign(panel.style, { transition: `height ${ACC_MS}ms ${ACC_EASE}, margin-bottom ${ACC_MS}ms ${ACC_EASE}, opacity ${ACC_MS}ms ease`, height: h2 + "px", marginBottom: mb, opacity: "1" });
+        closing = setTimeout(clearAnim, ACC_MS + 40);
+        return;
+      }
       if (!RM) {
         ghost = panel.cloneNode(true);
         ghost.setAttribute("aria-hidden", "true");
@@ -2458,10 +2481,11 @@
       Object.assign(panel.style, { transition: tr, height: h + "px", marginBottom: mb, opacity: "1" });
       Object.assign(ghost.style, { transition: tr, height: "0px", marginBottom: "0px", opacity: "0" });
       const g = ghost;
-      setTimeout(() => {
+      closing = setTimeout(() => {
         g.remove();
         if (ghost === g) ghost = null;
-        ["height", "marginBottom", "overflow", "opacity", "transition"].forEach((k) => panel.style[k] = "");
+        clearAnim();
+        if (cur2 < 0) return;
         const t = tabs[cur2].getBoundingClientRect().top;
         if (t < 72) {
           const y = scrollY + t - 80, ln = window.__lenis;
@@ -2470,20 +2494,47 @@
         }
       }, ACC_MS + 40);
     }
+    const mark = (i) => tabs.forEach((t, j) => {
+      const on = j === i, l = $(".home-usecases_label", t), ic = $(".home-usecases_icon", t);
+      t.classList.toggle("is-active", on);
+      t.setAttribute("aria-selected", on);
+      t.setAttribute("aria-expanded", on);
+      if (l) l.classList.toggle("is-active", on);
+      if (ic) {
+        ic.classList.toggle("is-active", on);
+        ic.textContent = on ? "\u2212" : "+";
+      }
+    });
+    function closeAll() {
+      if (ghost) {
+        ghost.remove();
+        ghost = null;
+      }
+      clearTimeout(closing);
+      cur2 = -1;
+      mark(-1);
+      if (RM) {
+        layout();
+        return;
+      }
+      clearAnim();
+      Object.assign(panel.style, { height: panel.offsetHeight + "px", overflow: "hidden", transition: "none" });
+      void panel.offsetHeight;
+      Object.assign(panel.style, { transition: `height ${ACC_MS}ms ${ACC_EASE}, margin-bottom ${ACC_MS}ms ${ACC_EASE}, opacity ${ACC_MS}ms ease`, height: "0px", marginBottom: "0px", opacity: "0" });
+      closing = setTimeout(() => {
+        clearAnim();
+        layout();
+      }, ACC_MS + 40);
+    }
     function set(i) {
-      if (i === cur2) return;
+      if (i === cur2) {
+        if (mq.matches) closeAll();
+        return;
+      }
+      const from = cur2;
       cur2 = i;
       since = performance.now();
-      tabs.forEach((t, j) => {
-        const on = j === i, l = $(".home-usecases_label", t), ic = $(".home-usecases_icon", t);
-        t.classList.toggle("is-active", on);
-        t.setAttribute("aria-selected", on);
-        if (l) l.classList.toggle("is-active", on);
-        if (ic) {
-          ic.classList.toggle("is-active", on);
-          ic.textContent = on ? "\u2212" : "+";
-        }
-      });
+      mark(i);
       const fill = () => {
         const u = UC[i];
         K2.textContent = u.k;
@@ -2496,7 +2547,7 @@
       };
       clearTimeout(sw);
       if (mq.matches) {
-        accordion(fill);
+        accordion(fill, from);
         return;
       }
       card.style.opacity = "0";
@@ -3333,7 +3384,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.11";
+    window.__arborumAnim = "1.4.12";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

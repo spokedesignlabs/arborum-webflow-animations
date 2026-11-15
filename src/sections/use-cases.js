@@ -34,6 +34,9 @@ export default function initUseCases() {
   const auto = () => autoOn && vis && !RM && !mq.matches && !document.hidden; // phones: tap only
   // phones: the panel sits right under the open tab, and the photo sits above the text (never behind it)
   function layout() {
+    if (cur < 0 && !mq.matches) return set(0); // all closed only exists on phones; on a wider screen open the first again
+    panel.style.display = cur < 0 ? 'none' : ''; // phones: every item closed
+    if (cur < 0) { tabs.forEach((t, j) => { t.style.order = String(j * 2) }); return }
     tabs.forEach((t, j) => { t.style.order = mq.matches ? String(j <= cur ? j * 2 : j * 2 + 2) : '' });
     panel.style.order = mq.matches ? String(cur * 2 + 1) : '';
     panel.style.backgroundImage = mq.matches ? 'none' : 'url(' + CDN + UC[cur].i + ')';
@@ -44,9 +47,21 @@ export default function initUseCases() {
   // a copy of it folds shut in the old place while the real one, with the new content, opens in the new place.)
   const ACC_MS = 320, ACC_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
   let ghost = null;
-  function accordion(fill) {
+  let closing = 0;
+  const clearAnim = () => ['height', 'marginBottom', 'overflow', 'opacity', 'transition'].forEach(k => panel.style[k] = '');
+  function accordion(fill, from) {
     if (ghost) { ghost.remove(); ghost = null }
+    clearTimeout(closing); clearAnim();
     const H = panel.offsetHeight, mb = getComputedStyle(panel).marginBottom, oldOrder = panel.style.order;
+    if (from < 0) { // opening from "all closed": nothing to fold shut, just unfold under the tapped item
+      fill(); layout(); if (RM) return;
+      const h = panel.offsetHeight;
+      Object.assign(panel.style, { height: '0px', marginBottom: '0px', overflow: 'hidden', opacity: '0', transition: 'none' });
+      void panel.offsetHeight;
+      Object.assign(panel.style, { transition: `height ${ACC_MS}ms ${ACC_EASE}, margin-bottom ${ACC_MS}ms ${ACC_EASE}, opacity ${ACC_MS}ms ease`, height: h + 'px', marginBottom: mb, opacity: '1' });
+      closing = setTimeout(clearAnim, ACC_MS + 40);
+      return;
+    }
     if (!RM) {
       ghost = panel.cloneNode(true); ghost.setAttribute('aria-hidden', 'true'); ghost.removeAttribute('id');
       Object.assign(ghost.style, { order: oldOrder, height: H + 'px', overflow: 'hidden', transition: 'none', pointerEvents: 'none' });
@@ -61,25 +76,39 @@ export default function initUseCases() {
     Object.assign(panel.style, { transition: tr, height: h + 'px', marginBottom: mb, opacity: '1' });
     Object.assign(ghost.style, { transition: tr, height: '0px', marginBottom: '0px', opacity: '0' });
     const g = ghost;
-    setTimeout(() => {
+    closing = setTimeout(() => {
       g.remove(); if (ghost === g) ghost = null;
-      ['height', 'marginBottom', 'overflow', 'opacity', 'transition'].forEach(k => panel.style[k] = '');
+      clearAnim();
+      if (cur < 0) return;
       // if the tapped item slid up under the header, bring it gently back into view
       const t = tabs[cur].getBoundingClientRect().top;
       if (t < 72) { const y = scrollY + t - 80, ln = window.__lenis; if (ln) ln.scrollTo(y, { duration: .5 }); else scrollTo({ top: y, behavior: 'smooth' }) }
     }, ACC_MS + 40);
   }
+  const mark = i => tabs.forEach((t, j) => {
+    const on = j === i, l = $('.home-usecases_label', t), ic = $('.home-usecases_icon', t);
+    t.classList.toggle('is-active', on); t.setAttribute('aria-selected', on); t.setAttribute('aria-expanded', on);
+    if (l) l.classList.toggle('is-active', on);
+    if (ic) { ic.classList.toggle('is-active', on); ic.textContent = on ? '−' : '+' }
+  });
+  // Phones: tapping the open item again folds it shut, leaving every item closed
+  function closeAll() {
+    if (ghost) { ghost.remove(); ghost = null }
+    clearTimeout(closing); cur = -1; mark(-1);
+    if (RM) { layout(); return }
+    clearAnim();
+    Object.assign(panel.style, { height: panel.offsetHeight + 'px', overflow: 'hidden', transition: 'none' });
+    void panel.offsetHeight;
+    Object.assign(panel.style, { transition: `height ${ACC_MS}ms ${ACC_EASE}, margin-bottom ${ACC_MS}ms ${ACC_EASE}, opacity ${ACC_MS}ms ease`, height: '0px', marginBottom: '0px', opacity: '0' });
+    closing = setTimeout(() => { clearAnim(); layout() }, ACC_MS + 40);
+  }
   function set(i) {
-    if (i === cur) return; cur = i; since = performance.now();
-    tabs.forEach((t, j) => {
-      const on = j === i, l = $('.home-usecases_label', t), ic = $('.home-usecases_icon', t);
-      t.classList.toggle('is-active', on); t.setAttribute('aria-selected', on);
-      if (l) l.classList.toggle('is-active', on);
-      if (ic) { ic.classList.toggle('is-active', on); ic.textContent = on ? '−' : '+' }
-    });
+    if (i === cur) { if (mq.matches) closeAll(); return }
+    const from = cur; cur = i; since = performance.now();
+    mark(i);
     const fill = () => { const u = UC[i]; K.textContent = u.k; T.textContent = u.t; D.textContent = u.d; if (photo) { photo.style.backgroundImage = 'url(' + CDN + u.m + ')'; photo.style.backgroundPosition = u.p } };
     clearTimeout(sw);
-    if (mq.matches) { accordion(fill); return }
+    if (mq.matches) { accordion(fill, from); return }
     card.style.opacity = '0'; card.style.filter = RM ? '' : 'blur(2px)';
     sw = setTimeout(() => { fill(); layout(); card.style.opacity = ''; card.style.filter = '' }, RM ? 0 : 220);
     layout();
