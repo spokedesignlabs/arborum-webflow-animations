@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.16 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.17 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -1530,7 +1530,7 @@
       gH = f.h;
       gR = clamp2(gW * 0.46, 300, 760);
       gCx = gW / 2;
-      const ctaB = (btn || heroEl).getBoundingClientRect(), gT = gc.getBoundingClientRect().top, crestY = ctaB.height ? Math.min(ctaB.bottom - gT + 56, gH - 170) : gH * 0.68;
+      const ps = heroEl.querySelectorAll("p"), anchor = btn || ps[ps.length - 1] || heroEl, ctaB = anchor.getBoundingClientRect(), gT = gc.getBoundingClientRect().top, crestY = ctaB.height ? Math.min(ctaB.bottom - gT + (btn ? 56 : 110), gH - 170) : gH * 0.68;
       gCy = (gW < gH ? Math.max(crestY, $("#hero").getBoundingClientRect().bottom - gT - (gW < 600 ? 210 : 330)) : crestY) + gR;
       drawGlobe(performance.now());
     }
@@ -3435,7 +3435,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.16";
+    window.__arborumAnim = "1.4.17";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],
