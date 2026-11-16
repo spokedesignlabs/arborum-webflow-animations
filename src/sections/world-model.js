@@ -2,8 +2,10 @@
  * A ripple network with ten options (Weather, Price, …) sitting on its nodes.
  *  - Click an option: a wave spreads from it across the network. Each other option is marked
  *    "Affected" at the moment the wave reaches it (nearest first), and an info window explains the option.
- *  - On its own, it runs through the options one by one every 4 seconds with the same wave and "Affected"
- *    tags (no info window). Clicking an option starts the 4 seconds again from that option.
+ *  - On its own, it runs through the options one by one with the same wave and "Affected" tags, and opens each
+ *    option's info window too (7 seconds each, so there is time to read it). The automatic window only opens
+ *    while the section is in view and the page is not being scrolled, never moves the page, and closes as
+ *    soon as you scroll away. Clicking an option takes over: its window stays until you close it.
  *  - Phones show six options in their own spaced-out layout (TAGS_PHONE).
  * Switch: worldModel (off: the static network picture and the options in their Webflow positions; clicking an
  *   option still opens its info window, just without the wave and "Affected" tags).
@@ -12,7 +14,7 @@
  */
 import { RM, ON, $, $$, clamp, debounce, visible, keyable, canvasIn, play } from '../core/utils.js';
 import Net from '../core/net.js';
-import { openWindow } from '../ui/popups.js';
+import { openWindow, closeWindow } from '../ui/popups.js';
 
 // [label, x, y] as a share of the network's width and height: each option sits on the nearest node
 const TAGS = [['Weather', .09, .28], ['Price', .29, .22], ['Transmission', .5, .26], ['Policy', .7, .22], ['Fault', .9, .3], ['Demand', .18, .64], ['Market', .39, .6], ['Storage', .6, .66], ['Asset', .79, .6], ['Grievance', .93, .7]];
@@ -35,6 +37,7 @@ const INFO = {
 // Phones show six options (Webflow hides Policy, Fault, Asset and Grievance): two per row, three rows
 const TAGS_PHONE = { Weather: [.24, .24], Price: [.74, .2], Transmission: [.3, .52], Demand: [.76, .5], Market: [.24, .82], Storage: [.72, .8] };
 const AUTO_MS = 4000; // the automatic run moves to the next option this often; a click starts the count again
+const AUTO_POP_MS = 7000; // ...or this often when it has opened the info window, so there is time to read it
 
 // how an option looks in each state (its resting and hover looks are Webflow styles on .home-world_chip)
 const LOOK = {
@@ -107,12 +110,15 @@ export default function initWorldModel() {
   }
 
   // automatic run: every AUTO_MS it moves to the next option; a click restarts the count from that option
-  let wmVis = false, nextAt = performance.now() + 1200, idx = -1;
+  let wmVis = false, nextAt = performance.now() + 1200, idx = -1, autoOpen = null, lastScroll = 0;
+  addEventListener('scroll', () => { lastScroll = performance.now() }, { passive: true });
+  const winOpts = { wide: true, width: 520, align: 'center', step: 450 };
   function tap(el) {
+    if (autoOpen) { autoOpen = null; closeWindow() } // a click takes over from the automatic window
     wave(el);
     idx = shown().indexOf(el); nextAt = performance.now() + AUTO_MS;
     state(el, 'open', true);
-    openWindow(el, { t: el.__k, p: INFO[el.__k] || '' }, { wide: true, width: 520, align: 'center', step: 450, onClose: t => state(t, 'open', false) });
+    openWindow(el, { t: el.__k, p: INFO[el.__k] || '' }, Object.assign({ onClose: t => state(t, 'open', false) }, winOpts));
   }
   tagEls.forEach(el => {
     el.addEventListener('click', e => { e.stopPropagation(); tap(el) });
@@ -121,11 +127,21 @@ export default function initWorldModel() {
   visible(pg, v => { wmVis = v; wm.run(v); if (v) nextAt = Math.max(nextAt, performance.now() + 600) });
   setInterval(() => {
     if (!wmVis || document.hidden || RM || performance.now() < nextAt) return;
-    if (tagEls.some(e => e.__s.open)) { nextAt = performance.now() + AUTO_MS; return } // leave an open info window alone
+    if (tagEls.some(e => e.__s.open && e !== autoOpen)) { nextAt = performance.now() + AUTO_MS; return } // leave a window you opened alone
     const list = shown(); if (!list.length) return;
     idx = (idx + 1) % list.length;
-    if (list[idx].__n) wave(list[idx]);
-    nextAt = performance.now() + AUTO_MS;
+    const el = list[idx];
+    if (el.__n) wave(el);
+    // the automatic info window: only with the chip well inside the screen and no scrolling for a moment
+    const r = el.getBoundingClientRect(), now = performance.now();
+    if (now - lastScroll > 700 && r.top > 70 && r.bottom < innerHeight - 70) {
+      autoOpen = el; state(el, 'open', true);
+      openWindow(el, { t: el.__k, p: INFO[el.__k] || '' }, Object.assign({ onClose: t => { state(t, 'open', false); if (autoOpen === t) autoOpen = null } }, winOpts));
+      nextAt = now + AUTO_POP_MS;
+    } else {
+      if (autoOpen) closeWindow();
+      nextAt = now + AUTO_MS;
+    }
   }, 200);
 
   wm.build();

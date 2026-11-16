@@ -1,7 +1,8 @@
 /* Beyond Energy
  * A long pinned section (the Webflow section is 300vh, 540vh on phones, with a sticky inner block).
  *  - Canvas: threads fall in from above, then the camera flies through three network shapes:
- *    a flat channel (Energy) -> a tunnel (Telecom) -> a constellation (Other networks). The background tint follows.
+ *    a flat channel (Energy) -> a tunnel (Telecom) -> a constellation (Other networks). The background tint follows
+ *    (light blue for Energy, soft lavender for Telecom, peach for Other networks).
  *  - Three chapters of equal length (Energy, Telecom, Other networks). Each holds its shape; the change happens
  *    quickly at the border, and when you stop scrolling part-way, it glides to the nearest chapter.
  *  - Copy: the heading and paragraph change with the chapter, with a short fade.
@@ -72,8 +73,8 @@ function buildMorph(){mf=fit(mc);setSeed(11);MP=[];ME=[[],[],[]];const A=[],B=[]
  for(let i=0;i<N;i++)MP.push({a:A[i],b:B[i],c:C[i],r:rnd(1.5,2.8),ph:rnd(6.28)});
  MTH=[at(1,5,3),at(1,4,15),at(1,8,9)];drawMorph(performance.now())}
 function drawMorph(t){const{x,w:W,h:H}=mf;if(!W)return;const p=morphM,P0=morphP,w0=1-ease(clamp((p-.22)/.2)),w2=ease(clamp((p-.6)/.2)),w1=clamp(1-w0-w2);
- const end=clamp((1-P0)/.12);const C0=[243,242,238],bg=mix(mix(mix(C0,[212,233,246],clamp(p/.2)),[197,226,245],w1),[248,229,211],w2),bgc=mix(C0,bg,end*clamp(morphE*1.2));x.fillStyle=rgba(bgc);x.fillRect(0,0,W,H);
- const f=Math.min(W*.66,H*1.05),cz=-70+p*(RM?0:330),o=RM?0:t/2600,cx=W/2,cy=H/2,P=[];const col=mix(mix(DEEP,mix(DEEP,VIO,.65),w1),mix(VIO,NAVY,.12),w2);
+ const end=clamp((1-P0)/.12);const C0=[243,242,238],bg=mix(mix(mix(C0,[212,233,246],clamp(p/.2)),[228,225,247],w1),[248,229,211],w2),bgc=mix(C0,bg,end*clamp(morphE*1.2));x.fillStyle=rgba(bgc);x.fillRect(0,0,W,H);
+ const f=Math.min(W*.66,H*1.05),cz=-70+p*(RM?0:330),o=RM?0:t/2600,cx=W/2,cy=H/2,P=[];const col=mix(mix(DEEP,[84,82,176],w1),mix(VIO,NAVY,.12),w2);
  for(let i=0;i<N;i++){const m=MP[i],X=m.a[0]*w0+m.b[0]*w1+m.c[0]*w2,Y=m.a[1]*w0+m.b[1]*w1+m.c[1]*w2,Z=m.a[2]*w0+m.b[2]*w1+m.c[2]*w2;let d=Z-cz;if(d<14){d+=0;P.push(null);continue}const k=f/d;P.push([cx+(X+Math.sin(o+m.ph)*2)*k,cy-(Y+Math.cos(o*1.2+m.ph)*2)*k,d,k])}
  const fadeD=d=>clamp((d-14)/46)*clamp(1.12-d/820);
  const bk=[[],[],[],[]];[w0,w1,w2].forEach((w,k)=>{if(w<.02)return;for(const[a,b]of ME[k]){const q=P[a],r=P[b];if(!q||!r)continue;const al=fadeD((q[2]+r[2])/2)*w;if(al<.03)continue;bk[Math.min(3,al*4|0)].push(q[0],q[1],r[0],r[1])}});

@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.13 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.14 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2741,11 +2741,11 @@
       if (!W) return;
       const p = morphM, P0 = morphP, w0 = 1 - ease(clamp2((p - 0.22) / 0.2)), w2 = ease(clamp2((p - 0.6) / 0.2)), w1 = clamp2(1 - w0 - w2);
       const end = clamp2((1 - P0) / 0.12);
-      const C0 = [243, 242, 238], bg = mix(mix(mix(C0, [212, 233, 246], clamp2(p / 0.2)), [197, 226, 245], w1), [248, 229, 211], w2), bgc = mix(C0, bg, end * clamp2(morphE * 1.2));
+      const C0 = [243, 242, 238], bg = mix(mix(mix(C0, [212, 233, 246], clamp2(p / 0.2)), [228, 225, 247], w1), [248, 229, 211], w2), bgc = mix(C0, bg, end * clamp2(morphE * 1.2));
       x.fillStyle = rgba(bgc);
       x.fillRect(0, 0, W, H);
       const f = Math.min(W * 0.66, H * 1.05), cz = -70 + p * (RM ? 0 : 330), o = RM ? 0 : t / 2600, cx = W / 2, cy = H / 2, P2 = [];
-      const col = mix(mix(DEEP, mix(DEEP, VIO, 0.65), w1), mix(VIO, NAVY, 0.12), w2);
+      const col = mix(mix(DEEP, [84, 82, 176], w1), mix(VIO, NAVY, 0.12), w2);
       for (let i = 0; i < N; i++) {
         const m = MP[i], X = m.a[0] * w0 + m.b[0] * w1 + m.c[0] * w2, Y = m.a[1] * w0 + m.b[1] * w1 + m.c[1] * w2, Z = m.a[2] * w0 + m.b[2] * w1 + m.c[2] * w2;
         let d = Z - cz;
@@ -2996,6 +2996,7 @@
   };
   var TAGS_PHONE = { Weather: [0.24, 0.24], Price: [0.74, 0.2], Transmission: [0.3, 0.52], Demand: [0.76, 0.5], Market: [0.24, 0.82], Storage: [0.72, 0.8] };
   var AUTO_MS = 4e3;
+  var AUTO_POP_MS = 7e3;
   var LOOK = {
     open: { backgroundColor: "#0071B1", color: "#fff", boxShadow: "0 0 0 4px rgba(109,194,242,.3)" },
     on: { backgroundColor: "#0071B1", color: "#fff", boxShadow: "none" },
@@ -3080,13 +3081,21 @@
       if (el.__n) wm.ripple(el.__n.x, el.__n.y, 6);
       affect(el);
     }
-    let wmVis = false, nextAt = performance.now() + 1200, idx = -1;
+    let wmVis = false, nextAt = performance.now() + 1200, idx = -1, autoOpen = null, lastScroll = 0;
+    addEventListener("scroll", () => {
+      lastScroll = performance.now();
+    }, { passive: true });
+    const winOpts = { wide: true, width: 520, align: "center", step: 450 };
     function tap(el) {
+      if (autoOpen) {
+        autoOpen = null;
+        closeWindow();
+      }
       wave(el);
       idx = shown().indexOf(el);
       nextAt = performance.now() + AUTO_MS;
       state(el, "open", true);
-      openWindow(el, { t: el.__k, p: INFO[el.__k] || "" }, { wide: true, width: 520, align: "center", step: 450, onClose: (t) => state(t, "open", false) });
+      openWindow(el, { t: el.__k, p: INFO[el.__k] || "" }, Object.assign({ onClose: (t) => state(t, "open", false) }, winOpts));
     }
     tagEls.forEach((el) => {
       el.addEventListener("click", (e) => {
@@ -3102,15 +3111,28 @@
     });
     setInterval(() => {
       if (!wmVis || document.hidden || RM || performance.now() < nextAt) return;
-      if (tagEls.some((e) => e.__s.open)) {
+      if (tagEls.some((e) => e.__s.open && e !== autoOpen)) {
         nextAt = performance.now() + AUTO_MS;
         return;
       }
       const list = shown();
       if (!list.length) return;
       idx = (idx + 1) % list.length;
-      if (list[idx].__n) wave(list[idx]);
-      nextAt = performance.now() + AUTO_MS;
+      const el = list[idx];
+      if (el.__n) wave(el);
+      const r = el.getBoundingClientRect(), now = performance.now();
+      if (now - lastScroll > 700 && r.top > 70 && r.bottom < innerHeight - 70) {
+        autoOpen = el;
+        state(el, "open", true);
+        openWindow(el, { t: el.__k, p: INFO[el.__k] || "" }, Object.assign({ onClose: (t) => {
+          state(t, "open", false);
+          if (autoOpen === t) autoOpen = null;
+        } }, winOpts));
+        nextAt = now + AUTO_POP_MS;
+      } else {
+        if (autoOpen) closeWindow();
+        nextAt = now + AUTO_MS;
+      }
     }, 200);
     wm.build();
     addEventListener("resize", debounce2(() => wm.build()));
@@ -3384,7 +3406,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.13";
+    window.__arborumAnim = "1.4.14";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],
