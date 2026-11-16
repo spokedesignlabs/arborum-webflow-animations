@@ -1,5 +1,8 @@
 /* Hero globe (Home)
  * Dotted globe with land, hub arcs and a pulse you can send by clicking. Drag to turn it.
+ * The first pulse sends itself a few seconds after the page opens (FIRST_PULSE_MS).
+ * The white signals glide smoothly along their routes (positions are blended between the route's points,
+ * not snapped to them, which made them step and stutter).
  * Webflow elements: .section_home-hero > canvas.home-hero_globe (the globe; its colour blend, glow and
  *   opacity are Webflow styles), canvas.home-hero_dots (land dots), .home-hero_fade (soft fade at the bottom).
  * Switch: heroGlobe (off: the hero shows its static globe picture from Webflow).
@@ -29,6 +32,9 @@ function buildGlobe(){const f=fit(gc);gx=f.x;gW=f.w;gH=f.h;gR=clamp(gW*.46,300,7
 function proj(v,out){const a=(lon+pLon)*Math.PI/180,b=lat*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);const x=v[0]*ca-v[2]*sa,z0=v[0]*sa+v[2]*ca,y=v[1]*cb-z0*sb,z=v[1]*sb+z0*cb;out[0]=gCx+x*gR;out[1]=gCy-y*gR;out[2]=z;return out}
 function unproj(px,py){const X=(px-gCx)/gR,Y=(gCy-py)/gR,q=X*X+Y*Y;if(q>=1)return null;const Z=Math.sqrt(1-q),a=(lon+pLon)*Math.PI/180,b=lat*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b);const z0=Z*cb-Y*sb,y=Y*cb+Z*sb;return[X*ca+z0*sa,y,-X*sa+z0*ca]}
 const easeOut=t=>1-Math.pow(1-t,3),WAVE=4.4;
+const FIRST_PULSE_MS=3000; // the automatic first pulse waits this long after the page opens
+// a point part-way along an arc (u from 0 to 1), blended between its two nearest route points so movement is smooth
+const P3=[0,0,0];function at3(e,u){const n=e.pts.length-1,f=clamp(u,0,1)*n,i=Math.min(n-1,f|0),k=f-i,a=e.pts[i],b=e.pts[i+1];P3[0]=a[0]+(b[0]-a[0])*k;P3[1]=a[1]+(b[1]-a[1])*k;P3[2]=a[2]+(b[2]-a[2])*k;return P3}
 // A click sends a pulse: the globe deepens to Sky Horizon blue for a moment and bright dot trails race city to city.
 const GRAT=[];for(let lo=0;lo<180;lo+=30){const a=[];for(let la=-180;la<=180;la+=5)a.push(toV(la<=90&&la>=-90?la:(la>0?180-la:-180-la),la<=90&&la>=-90?lo:lo+180));GRAT.push(a)}for(let la=-60;la<=60;la+=30){const a=[];for(let lo=-180;lo<=180;lo+=5)a.push(toV(la,lo));GRAT.push(a)}
 function drawGlobe(t){if(!gx)return;let x=gx;x.clearRect(0,0,gW,gH);const FX=(()=>{const c=dotsCv;if(!c)return gx;if(c.width!==gc.width||c.height!==gc.height){c.width=gc.width;c.height=gc.height}const f=c.getContext('2d');f.setTransform(1,0,0,1,0,0);f.clearRect(0,0,c.width,c.height);f.setTransform(gx.getTransform());return f})();
@@ -58,7 +64,7 @@ function drawGlobe(t){if(!gx)return;let x=gx;x.clearRect(0,0,gW,gH);const FX=(()
  const fv=w?clamp(age/.35)*(1-clamp((age-2.9)/1.3)):0;
  if(fv>0){const vg=F.createRadialGradient(gCx,gCy-gR*.6,gR*.1,gCx,gCy,gR);vg.addColorStop(0,'rgba(0,113,177,'+(.5*fv)+')');vg.addColorStop(.7,'rgba(0,92,150,'+(.6*fv)+')');vg.addColorStop(1,'rgba(0,73,122,'+(.68*fv)+')');F.fillStyle=vg;F.beginPath();F.arc(gCx,gCy,gR,0,6.283);F.fill()}
  // path of an arc (part of it: from u0 to u1 of its length, in the direction "fwd")
- const arcPath=(e,u0,u1,fwd)=>{const n=e.pts.length-1;F.beginPath();let up=false,hx=null,hy=null;for(let m=Math.floor(n*u0);m<=Math.ceil(n*u1);m++){const p=e.pts[fwd?m:n-m];if(!p)continue;proj(p,o);if(o[2]<=.04){up=false;continue}up?F.lineTo(o[0],o[1]):F.moveTo(o[0],o[1]);up=true;hx=o[0];hy=o[1]}return hx==null?null:[hx,hy]};
+ const arcPath=(e,u0,u1,fwd)=>{const n=e.pts.length-1;F.beginPath();let up=false,hx=null,hy=null;const add=p=>{proj(p,o);if(o[2]<=.04){up=false;return}up?F.lineTo(o[0],o[1]):F.moveTo(o[0],o[1]);up=true;hx=o[0];hy=o[1]};for(let m=Math.floor(n*u0);m<=Math.floor(n*u1);m++){const p=e.pts[fwd?m:n-m];if(p)add(p)}if(u1<1)add(at3(e,fwd?u1:1-u1));return hx==null?null:[hx,hy]}; // ends exactly at u1, so a growing line moves smoothly
  // resting network: a hair-thin navy edge under a white line, so it reads on the light and the dark parts of the globe
  F.lineCap='round';
  const rest=1-.6*fv; // the resting network steps back while a pulse runs
@@ -67,7 +73,7 @@ function drawGlobe(t){if(!gx)return;let x=gx;x.clearRect(0,0,gW,gH);const FX=(()
  // quiet data flow along every other arc: small white points with a blue glow
  // data moving along every route: a short trail of dots (white at the front, into Signal Blue), always running
  if(AR>=1)ARCS.forEach((e,k)=>{const n=e.pts.length-1,u0=((t/(4200+(k%5)*500)+k*.37)%1),fade=Math.sin(u0*Math.PI)*rest;if(fade<=.02)return;
-  for(let d=0;d<5;d++){const u=u0-d*.025;if(u<0)break;proj(e.pts[Math.round(u*n)],o);if(o[2]<=.03)continue;const tc=tint(o[1]);F.fillStyle=rgba(d?mix(tc,SIG,d/4):tc,fade*(1-d*.17));F.beginPath();F.arc(o[0],o[1],Math.max(.7,(2.4-d*.35)*sc),0,6.283);F.fill()}});
+  for(let d=0;d<5;d++){const u=u0-d*.025;if(u<0)break;proj(at3(e,u),o);if(o[2]<=.03)continue;const tc=tint(o[1]);F.fillStyle=rgba(d?mix(tc,SIG,d/4):tc,fade*(1-d*.17));F.beginPath();F.arc(o[0],o[1],Math.max(.7,(2.4-d*.35)*sc),0,6.283);F.fill()}});
  // when each hub is reached by a pulse (seconds after the click), for flashes
  const arrive=[];
  if(w){
@@ -81,7 +87,7 @@ function drawGlobe(t){if(!gx)return;let x=gx;x.clearRect(0,0,gW,gH);const FX=(()
    if(q>=1){const fd=clamp(1-(q-1)*TRAVEL/1.6);if(fd>0)lit(1,fd);return}
    const head=easeOut(q);lit(head,1);
    // the pulse itself: a short trail of dots (the logomark's dot language), largest and brightest at the front
-   const pn=e.pts.length-1;for(let d=0;d<11;d++){const u=head-d*.032;if(u<0)break;const pp=e.pts[Math.round((fwd?u:1-u)*pn)];proj(pp,o);if(o[2]<=.04)continue;
+   const pn=e.pts.length-1;for(let d=0;d<11;d++){const u=head-d*.032;if(u<0)break;proj(at3(e,fwd?u:1-u),o);if(o[2]<=.04)continue;
     const rr2=(3.4-d*.26)*sc,al=1-d*.075;F.fillStyle=rgba(d?mix(WHITE,SIG,Math.min(1,d/5)):WHITE,al);if(!d){F.shadowColor='rgba(255,255,255,.95)';F.shadowBlur=12}F.beginPath();F.arc(o[0],o[1],Math.max(.8,rr2),0,6.283);F.fill();F.shadowBlur=0}});
  }
  // hubs: white points with a navy hairline; they flash when a pulse reaches them
@@ -105,7 +111,7 @@ hero.addEventListener('pointerdown',e=>{if(e.target.closest('a'))return;down={x:
 hero.addEventListener('pointermove',e=>{const r=gc.getBoundingClientRect();if(down){const d=e.clientX-down.x;if(Math.abs(d)>4){down.moved=true;dragging=true;}if(down.moved){const n=down.lon-d*.075;vLon=(n-lon)*.45;lon=n;gKick()}}else if(!RM){tPLon=-((e.clientX-r.left)/r.width-.5)*2.4;tLat=LAT0+((e.clientY-r.top)/r.height-.5)*.9;gKick()}});
 hero.addEventListener('pointerup',e=>{if(!down)return;const m=down.moved;down=null;dragging=false;if(m){gKick();return}const r=gc.getBoundingClientRect();const v=unproj(e.clientX-r.left,e.clientY-r.top);let target=v;if(!target){const dx=e.clientX-r.left-gCx,dy=gCy-(e.clientY-r.top),n=Math.hypot(dx,dy)||1;target=unproj(gCx+dx/n*gR*.92,gCy-dy/n*gR*.92)||HV[0]}sendWave(target);lastHit=performance.now();hint.style.opacity=0;0});
 hero.addEventListener('pointerleave',()=>{tPLon=0;tLat=LAT0;gKick()});
-if(!RM)setTimeout(()=>{if(!wave&&route==='home'){const c=unproj(gCx,gCy-gR*.985);if(c)sendWave(c,true)}},650);
+if(!RM)setTimeout(()=>{if(!wave&&route==='home'){const c=unproj(gCx,gCy-gR*.985);if(c)sendWave(c,true)}},FIRST_PULSE_MS);
 
 
  buildGlobe();addEventListener('resize',debounce(buildGlobe));if(document.fonts&&document.fonts.ready)document.fonts.ready.then(buildGlobe);

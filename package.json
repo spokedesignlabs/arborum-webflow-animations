@@ -1,6 +1,6 @@
 {
   "name": "arborum-webflow-animations",
-  "version": "1.4.15",
+  "version": "1.4.16",
   "private": true,
   "description": "Animations and interactions for the Arborum Webflow site",
   "scripts": {

@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.15 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.16 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -1550,6 +1550,15 @@
       return [X * ca + z0 * sa, y, -X * sa + z0 * ca];
     }
     const easeOut = (t) => 1 - Math.pow(1 - t, 3), WAVE = 4.4;
+    const FIRST_PULSE_MS = 3e3;
+    const P3 = [0, 0, 0];
+    function at3(e, u) {
+      const n = e.pts.length - 1, f = clamp2(u, 0, 1) * n, i = Math.min(n - 1, f | 0), k = f - i, a = e.pts[i], b = e.pts[i + 1];
+      P3[0] = a[0] + (b[0] - a[0]) * k;
+      P3[1] = a[1] + (b[1] - a[1]) * k;
+      P3[2] = a[2] + (b[2] - a[2]) * k;
+      return P3;
+    }
     const GRAT = [];
     for (let lo = 0; lo < 180; lo += 30) {
       const a = [];
@@ -1709,19 +1718,22 @@
         const n = e.pts.length - 1;
         F.beginPath();
         let up = false, hx = null, hy = null;
-        for (let m = Math.floor(n * u0); m <= Math.ceil(n * u1); m++) {
-          const p = e.pts[fwd ? m : n - m];
-          if (!p) continue;
+        const add = (p) => {
           proj(p, o);
           if (o[2] <= 0.04) {
             up = false;
-            continue;
+            return;
           }
           up ? F.lineTo(o[0], o[1]) : F.moveTo(o[0], o[1]);
           up = true;
           hx = o[0];
           hy = o[1];
+        };
+        for (let m = Math.floor(n * u0); m <= Math.floor(n * u1); m++) {
+          const p = e.pts[fwd ? m : n - m];
+          if (p) add(p);
         }
+        if (u1 < 1) add(at3(e, fwd ? u1 : 1 - u1));
         return hx == null ? null : [hx, hy];
       };
       F.lineCap = "round";
@@ -1744,7 +1756,7 @@
         for (let d = 0; d < 5; d++) {
           const u = u0 - d * 0.025;
           if (u < 0) break;
-          proj(e.pts[Math.round(u * n)], o);
+          proj(at3(e, u), o);
           if (o[2] <= 0.03) continue;
           const tc = tint(o[1]);
           F.fillStyle = rgba(d ? mix(tc, SIG, d / 4) : tc, fade * (1 - d * 0.17));
@@ -1789,8 +1801,7 @@
           for (let d = 0; d < 11; d++) {
             const u = head - d * 0.032;
             if (u < 0) break;
-            const pp = e.pts[Math.round((fwd ? u : 1 - u) * pn)];
-            proj(pp, o);
+            proj(at3(e, fwd ? u : 1 - u), o);
             if (o[2] <= 0.04) continue;
             const rr2 = (3.4 - d * 0.26) * sc, al = 1 - d * 0.075;
             F.fillStyle = rgba(d ? mix(WHITE, SIG, Math.min(1, d / 5)) : WHITE, al);
@@ -1959,7 +1970,7 @@
         const c = unproj(gCx, gCy - gR * 0.985);
         if (c) sendWave(c, true);
       }
-    }, 650);
+    }, FIRST_PULSE_MS);
     buildGlobe();
     addEventListener("resize", debounce2(buildGlobe));
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(buildGlobe);
@@ -3424,7 +3435,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.15";
+    window.__arborumAnim = "1.4.16";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],
