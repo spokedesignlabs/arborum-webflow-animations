@@ -15,6 +15,7 @@ import initPopups from './ui/popups.js';
 import initButtons from './ui/buttons.js';
 import initReveal from './ui/reveal.js';
 import initHeader from './ui/header.js';
+import initHeroTitle from './ui/hero-title.js';
 import initHeroGlobe from './sections/hero-globe.js';
 import initStatementEnergy from './sections/statement-energy.js';
 import initOneWorldModel from './sections/one-world-model.js';
@@ -29,7 +30,7 @@ function start() {
   window.__arborumAnim = __VERSION__;
   const parts = [
     ['smooth scroll', initSmoothScroll], ['pop-ups', initPopups], ['buttons', initButtons], ['reveal', initReveal],
-    ['header', initHeader], ['hero globe', initHeroGlobe], ['statement + energy', initStatementEnergy],
+    ['header', initHeader], ['hero entrance', initHeroTitle], ['hero globe', initHeroGlobe], ['statement + energy', initStatementEnergy],
     ['one world model', initOneWorldModel], ['use cases', initUseCases], ['beyond energy', initBeyondEnergy],
     ['world model', initWorldModel], ['about network', initAboutNetwork], ['footer', initFooterDots]
   ];

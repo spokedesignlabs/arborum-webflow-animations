@@ -79,9 +79,9 @@ npm run build
 ## Release
 
 1. Bump `version` in `package.json`, run `npm run build`, commit (include `dist/`).
-2. Tag it: `git tag 1.4.17 && git push origin main --tags`.
+2. Tag it: `git tag 1.4.18 && git push origin main --tags`.
 3. The file is then at
-   `https://cdn.jsdelivr.net/gh/spokedesignlabs/arborum-webflow-animations@1.4.17/dist/arborum.min.js`
+   `https://cdn.jsdelivr.net/gh/spokedesignlabs/arborum-webflow-animations@1.4.18/dist/arborum.min.js`
 4. Work out its integrity hash:
    `curl -s <that URL> | openssl dgst -sha384 -binary | openssl base64 -A` (prefix `sha384-`).
 5. In Webflow, register the new hosted script version with that URL and hash, swap it in the site
