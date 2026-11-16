@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.14 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.15 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2704,8 +2704,16 @@
     function ease(t) {
       return t * t * (3 - 2 * t);
     }
+    let TB = null;
     function buildMorph() {
       mf = fit(mc);
+      {
+        const c = stage.querySelector(".home-beyond_component"), cr = mc.getBoundingClientRect();
+        if (c) {
+          const r = c.getBoundingClientRect(), cs = getComputedStyle(c);
+          TB = [r.top - cr.top + parseFloat(cs.paddingTop), r.bottom - cr.top - parseFloat(cs.paddingBottom)];
+        }
+      }
       setSeed(11);
       MP = [];
       ME = [[], [], []];
@@ -2790,13 +2798,23 @@
         x.arc(q[0], q[1], clamp2(MP[i].r * q[3] * 0.42, 0.7, 6), 0, 6.283);
         x.fill();
       }
-      const v = x.createLinearGradient(0, cy - H * 0.34, 0, cy + H * 0.34);
-      v.addColorStop(0, rgba(bgc, 0));
-      v.addColorStop(0.3, rgba(bgc, 0.72));
-      v.addColorStop(0.7, rgba(bgc, 0.72));
-      v.addColorStop(1, rgba(bgc, 0));
-      x.fillStyle = v;
-      x.fillRect(0, 0, W, H);
+      if (TB && TB[1] > TB[0]) {
+        const y0 = TB[0] - 110, y3 = TB[1] + 70, L2 = y3 - y0, v = x.createLinearGradient(0, y0, 0, y3);
+        v.addColorStop(0, rgba(bgc, 0));
+        v.addColorStop(100 / L2, rgba(bgc, 0.9));
+        v.addColorStop(1 - 60 / L2, rgba(bgc, 0.9));
+        v.addColorStop(1, rgba(bgc, 0));
+        x.fillStyle = v;
+        x.fillRect(0, y0, W, L2);
+      } else {
+        const v = x.createLinearGradient(0, cy - H * 0.34, 0, cy + H * 0.34);
+        v.addColorStop(0, rgba(bgc, 0));
+        v.addColorStop(0.3, rgba(bgc, 0.72));
+        v.addColorStop(0.7, rgba(bgc, 0.72));
+        v.addColorStop(1, rgba(bgc, 0));
+        x.fillStyle = v;
+        x.fillRect(0, 0, W, H);
+      }
       const ta = 1 - clamp2((p - 0.14) / 0.1);
       if (ta > 0 && morphE > 0) MTH.forEach((id, i) => {
         const q = P2[id];
@@ -3406,7 +3424,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.14";
+    window.__arborumAnim = "1.4.15";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

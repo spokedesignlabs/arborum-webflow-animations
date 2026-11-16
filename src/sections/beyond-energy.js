@@ -65,7 +65,8 @@ function initMorph(){var morphSec=document.getElementById('beyond'),stage=morphS
 /* ---- Beyond Energy: threads fall in, then the camera flies through channel, tunnel and constellation ---- */
 const mc=$('#morph');let mf,MP=[],ME=[[],[],[]],mOn=false,MTH=[];const N=456;
 function ease(t){return t*t*(3-2*t)}
-function buildMorph(){mf=fit(mc);setSeed(11);MP=[];ME=[[],[],[]];const A=[],B=[],C=[];
+let TB=null; // the text block's top and bottom on the canvas, so a calm band of the chapter colour sits behind the words
+function buildMorph(){mf=fit(mc);{const c=stage.querySelector('.home-beyond_component'),cr=mc.getBoundingClientRect();if(c){const r=c.getBoundingClientRect(),cs=getComputedStyle(c);TB=[r.top-cr.top+parseFloat(cs.paddingTop),r.bottom-cr.top-parseFloat(cs.paddingBottom)]}}setSeed(11);MP=[];ME=[[],[],[]];const A=[],B=[],C=[];
  for(let s2=0;s2<2;s2++)for(let r=0;r<12;r++)for(let c=0;c<19;c++)A.push([(c-9)*38+(r%2)*19,(s2?1:-1)*(74+rnd(-3,3)),60+r*62]);
  const at=(s2,r,c)=>s2*228+r*19+c;for(let s2=0;s2<2;s2++)for(let r=0;r<12;r++)for(let c=0;c<19;c++){if(c<18)ME[0].push([at(s2,r,c),at(s2,r,c+1)]);if(r<11){ME[0].push([at(s2,r,c),at(s2,r+1,c)]);if(c<18&&r%2)ME[0].push([at(s2,r,c),at(s2,r+1,c+1)])}}
  for(let r=0;r<12;r++)for(let i=0;i<38;i++){const th=i/38*6.283+r*.16;B.push([Math.cos(th)*210,Math.sin(th)*122,60+r*62]);ME[1].push([r*38+i,r*38+(i+1)%38]);if(r<11&&i%3===0)ME[1].push([r*38+i,(r+1)*38+i])}
@@ -80,7 +81,8 @@ function drawMorph(t){const{x,w:W,h:H}=mf;if(!W)return;const p=morphM,P0=morphP,
  const bk=[[],[],[],[]];[w0,w1,w2].forEach((w,k)=>{if(w<.02)return;for(const[a,b]of ME[k]){const q=P[a],r=P[b];if(!q||!r)continue;const al=fadeD((q[2]+r[2])/2)*w;if(al<.03)continue;bk[Math.min(3,al*4|0)].push(q[0],q[1],r[0],r[1])}});
  x.lineWidth=1;bk.forEach((a,k)=>{if(!a.length)return;x.strokeStyle=rgba(col,.16+k*.2);x.beginPath();for(let i=0;i<a.length;i+=4){x.moveTo(a[i],a[i+1]);x.lineTo(a[i+2],a[i+3])}x.stroke()});
  for(let i=0;i<N;i++){const q=P[i];if(!q||q[0]<-8||q[0]>W+8||q[1]<-8||q[1]>H+8)continue;const a=fadeD(q[2]);if(a<.02)continue;x.fillStyle=rgba(col,.92*a);x.beginPath();x.arc(q[0],q[1],clamp(MP[i].r*q[3]*.42,.7,6),0,6.283);x.fill()}
- const v=x.createLinearGradient(0,cy-H*.34,0,cy+H*.34);v.addColorStop(0,rgba(bgc,0));v.addColorStop(.3,rgba(bgc,.72));v.addColorStop(.7,rgba(bgc,.72));v.addColorStop(1,rgba(bgc,0));x.fillStyle=v;x.fillRect(0,0,W,H);
+ if(TB&&TB[1]>TB[0]){const y0=TB[0]-110,y3=TB[1]+70,L=y3-y0,v=x.createLinearGradient(0,y0,0,y3);v.addColorStop(0,rgba(bgc,0));v.addColorStop(100/L,rgba(bgc,.9));v.addColorStop(1-60/L,rgba(bgc,.9));v.addColorStop(1,rgba(bgc,0));x.fillStyle=v;x.fillRect(0,y0,W,L)}
+ else{const v=x.createLinearGradient(0,cy-H*.34,0,cy+H*.34);v.addColorStop(0,rgba(bgc,0));v.addColorStop(.3,rgba(bgc,.72));v.addColorStop(.7,rgba(bgc,.72));v.addColorStop(1,rgba(bgc,0));x.fillStyle=v;x.fillRect(0,0,W,H)}
  const ta=1-clamp((p-.14)/.1);if(ta>0&&morphE>0)MTH.forEach((id,i)=>{const q=P[id];if(!q)return;const qq=clamp(morphE*1.08-i*.04);if(qq<=0)return;const ex=cx+MP[id].a[0]*f/(MP[id].a[2]+70),B=u=>{const w=1-u;return[w*w*w*ex+3*w*w*u*ex+3*w*u*u*q[0]+u*u*u*q[0],3*w*w*u*q[1]*.5+3*w*u*u*q[1]*.55+u*u*u*q[1]]};x.strokeStyle=`rgba(5,19,28,${.55*ta})`;x.lineWidth=1.2;x.beginPath();x.moveTo(ex,0);for(let k=1;k<=30;k++){const b=B(k/30*qq);x.lineTo(b[0],b[1])}x.stroke();const h=B(qq);x.fillStyle=`rgba(5,19,28,${ta})`;x.beginPath();x.arc(h[0],h[1],qq<1?4:2.6,0,6.283);x.fill();if(qq>=1){x.strokeStyle=`rgba(5,19,28,${.4*ta})`;x.beginPath();x.arc(h[0],h[1],7,0,6.283);x.stroke()}})}
 (function loop(t){if(mOn&&mf)drawMorph(t);requestAnimationFrame(loop)})(0);
 visible(mc,v=>mOn=v);
