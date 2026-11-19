@@ -1,4 +1,4 @@
-/*! Arborum website animations v1.4.18 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
+/*! Arborum website animations v1.4.19 · https://github.com/spokedesignlabs/arborum-webflow-animations · includes Lenis (MIT) */
 (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -2480,12 +2480,31 @@
 
   // src/sections/use-cases.js
   var CDN = "https://cdn.prod.website-files.com/6af68d8e7acb8dbd77201062/";
-  var UC = [
+  var FALLBACK = [
     { k: "Power generators", t: "Generation Forecast + Scheduling", d: "High-accuracy generation forecast and smarter, block-level scheduling decisions across day-ahead and intraday markets.", i: "6af69ac735c5dc2d29c69745_arborum-generation-licensed.jpg", m: "6af69ac61ea333a9ea2210d4_arborum-generation-licensed-m.jpg", p: "50% 50%" },
     { k: "Power distributors", t: "Load Forecast + Scheduling", d: "High-accuracy demand forecasting and intelligent scheduling to balance demand and supply across every block.", i: "6af69ac5505d0468f3762034_arborum-distribution-licensed.jpg", m: "6af69ac5505d0468f3762034_arborum-distribution-licensed.jpg", p: "62% 50%" },
     { k: "Battery energy storage systems", t: "Battery Charging + Discharging Optimisation", d: "AI-powered battery optimisation to maximise returns, reduce deviations and respond dynamically to changing grid conditions.", i: "6af69ac415bf88c09c359668_arborum-bess-licensed.jpg", m: "6af69ac415bf88c09c359668_arborum-bess-licensed.jpg", p: "50% 60%" }
-  ];
+  ].map((u) => ({ ...u, i: CDN + u.i, m: CDN + u.m }));
   var ROTATE_MS = 7e3;
+  function readCMS() {
+    const items = $$(".home-usecases_data .w-dyn-item");
+    if (!items.length) return FALLBACK;
+    const txt = (el, k) => {
+      const n = el.querySelector('[data-uc="' + k + '"]');
+      return n && !n.classList.contains("w-dyn-bind-empty") ? n.textContent.trim() : "";
+    };
+    const src = (el, k) => {
+      const n = el.querySelector('img[data-uc="' + k + '"]');
+      return n && !n.classList.contains("w-dyn-bind-empty") ? n.getAttribute("src") || "" : "";
+    };
+    const list = items.map((el, j) => ({ el, o: parseFloat(txt(el, "order")) || j + 1 })).sort((a, b) => a.o - b.o).slice(0, 3);
+    return FALLBACK.map((f, j) => {
+      const el = list[j] && list[j].el;
+      if (!el) return f;
+      const i = src(el, "photo") || f.i;
+      return { k: txt(el, "kicker") || f.k, t: txt(el, "title") || f.t, d: txt(el, "text") || f.d, i, m: src(el, "phone") || i, p: txt(el, "focus") || f.p };
+    });
+  }
   function initUseCases() {
     const tabs = $$(".home-usecases_tab"), panel = $(".home-usecases_panel");
     if (tabs.length !== 3 || !panel) return;
@@ -2493,11 +2512,19 @@
     const card = $(".home-usecases_card", panel), photo = $(".home-usecases_photo", panel);
     const K2 = $(".home-usecases_kicker", card), T2 = $(".home-usecases_title", card), D = $(".home-usecases_text", card);
     const bars = tabs.map((t) => $(".home-usecases_progress", t));
+    const UC = readCMS();
     let cur2 = 0, sw, since = performance.now(), vis = false;
     UC.forEach((u) => [u.i, u.m].forEach((s) => {
       const im = new Image();
-      im.src = CDN + s;
+      im.src = s;
     }));
+    if (K2) K2.textContent = UC[0].k;
+    if (T2) T2.textContent = UC[0].t;
+    if (D) D.textContent = UC[0].d;
+    if (photo) {
+      photo.style.backgroundImage = "url(" + UC[0].m + ")";
+      photo.style.backgroundPosition = UC[0].p;
+    }
     card.style.transition = "opacity 220ms ease, filter 220ms ease";
     const autoOn = ON("powerUseCases");
     const auto = () => autoOn && vis && !RM && !mq.matches && !document.hidden;
@@ -2514,7 +2541,7 @@
         t.style.order = mq.matches ? String(j <= cur2 ? j * 2 : j * 2 + 2) : "";
       });
       panel.style.order = mq.matches ? String(cur2 * 2 + 1) : "";
-      panel.style.backgroundImage = mq.matches ? "none" : "url(" + CDN + UC[cur2].i + ")";
+      panel.style.backgroundImage = mq.matches ? "none" : "url(" + UC[cur2].i + ")";
       panel.style.backgroundPosition = UC[cur2].p;
     }
     const ACC_MS = 320, ACC_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
@@ -2617,7 +2644,7 @@
         T2.textContent = u.t;
         D.textContent = u.d;
         if (photo) {
-          photo.style.backgroundImage = "url(" + CDN + u.m + ")";
+          photo.style.backgroundImage = "url(" + u.m + ")";
           photo.style.backgroundPosition = u.p;
         }
       };
@@ -3500,7 +3527,7 @@
   // src/index.js
   function start() {
     if (window.__arborumAnim) return;
-    window.__arborumAnim = "1.4.18";
+    window.__arborumAnim = "1.4.19";
     const parts = [
       ["smooth scroll", initSmoothScroll],
       ["pop-ups", initPopups],

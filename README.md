@@ -40,7 +40,7 @@ set `FOLLOW_OS_REDUCED_MOTION = true` in `src/core/utils.js`.
 | Hero globe: drag to turn it, click to send a pulse | `src/sections/hero-globe.js` (+ `src/data/globe.json`) | `.section_home-hero` > `canvas.home-hero_globe`, `canvas.home-hero_dots`, `.home-hero_fade` |
 | Threads from the hero past "AI for critical decisions…" onto the Energy photo; Energy pins, photo fades in and zooms, threads land on the towers, text arrives in steps, tower points with cards | `src/sections/statement-energy.js` | `canvas.home-statement_threads` (first child of `.main-wrapper`), `#energy` > `.home-energy_stage` > `canvas.home-energy_threads`, `.home-energy_point` ×3, `.home-energy_card` |
 | One World Model: lines draw in from the dependencies and out to the decisions, dots travel along them | `src/sections/one-world-model.js` | `.home-owm_component` > `canvas.home-owm_lines` |
-| Power use cases: progress bar fills for 7 seconds, then the next tab opens; a click restarts the 7 seconds; stacked list on phones | `src/sections/use-cases.js` | `.home-usecases_tab` ×3 (each with `.home-usecases_progress`), `.home-usecases_panel` |
+| Power use cases: progress bar fills for 7 seconds, then the next tab opens; a click restarts the 7 seconds; stacked list on phones | `src/sections/use-cases.js` | `.home-usecases_tab` ×3 (each with `.home-usecases_progress`), `.home-usecases_panel`; text and photos come from the CMS collection "Power use cases" via the hidden list `.home-usecases_data` (`[data-uc]` elements) |
 | Beyond Energy: network morph, copy changes at 34% and 67%, network labels highlight | `src/sections/beyond-energy.js` | `#beyond` > `.home-beyond_sticky` > `canvas.home-beyond_canvas`, `.home-beyond_trigger` (the h3 text) |
 | World Model playground: runs through the options every 4 seconds (wave + "Affected" tags); a click does the same, opens the info window and restarts the timer; own layout on phones | `src/sections/world-model.js` | `.home-world_network` > `canvas.home-world_canvas`, `.home-world_chip` (each with `.home-world_affected`) |
 | About hero network plane | `src/sections/about-network.js` | `.section_about-hero` > `canvas.about-hero_canvas` |
@@ -79,9 +79,9 @@ npm run build
 ## Release
 
 1. Bump `version` in `package.json`, run `npm run build`, commit (include `dist/`).
-2. Tag it: `git tag 1.4.18 && git push origin main --tags`.
+2. Tag it: `git tag 1.4.19 && git push origin main --tags`.
 3. The file is then at
-   `https://cdn.jsdelivr.net/gh/spokedesignlabs/arborum-webflow-animations@1.4.18/dist/arborum.min.js`
+   `https://cdn.jsdelivr.net/gh/spokedesignlabs/arborum-webflow-animations@1.4.19/dist/arborum.min.js`
 4. Work out its integrity hash:
    `curl -s <that URL> | openssl dgst -sha384 -binary | openssl base64 -A` (prefix `sha384-`).
 5. In Webflow, register the new hosted script version with that URL and hash, swap it in the site

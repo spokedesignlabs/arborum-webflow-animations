@@ -7,17 +7,34 @@
  * Switch: powerUseCases (off: no bar and no auto-switching; the tabs still work when clicked).
  * Webflow elements: .home-usecases_tab ×3 (each with .home-usecases_label, .home-usecases_icon,
  *   .home-usecases_progress), .home-usecases_panel (.home-usecases_card, .home-usecases_photo)
- * Images: Webflow asset URLs below (CDN + file name).
+ * Content: the Webflow CMS collection "Power use cases" (one item per tab, sorted by its Order field), shown on
+ *   Home in the hidden list .home-usecases_data. Each item holds [data-uc] elements bound to the fields:
+ *   order, kicker, title, text, focus, photo (image), phone (image, optional). The client edits text and photos
+ *   in the CMS; the values below are only a fallback if that list is missing or empty.
  */
 import { RM, ON, $, $$, keyable } from '../core/utils.js';
 
 const CDN = 'https://cdn.prod.website-files.com/6af68d8e7acb8dbd77201062/';
-const UC = [
+const FALLBACK = [
   { k: 'Power generators', t: 'Generation Forecast + Scheduling', d: 'High-accuracy generation forecast and smarter, block-level scheduling decisions across day-ahead and intraday markets.', i: '6af69ac735c5dc2d29c69745_arborum-generation-licensed.jpg', m: '6af69ac61ea333a9ea2210d4_arborum-generation-licensed-m.jpg', p: '50% 50%' },
   { k: 'Power distributors', t: 'Load Forecast + Scheduling', d: 'High-accuracy demand forecasting and intelligent scheduling to balance demand and supply across every block.', i: '6af69ac5505d0468f3762034_arborum-distribution-licensed.jpg', m: '6af69ac5505d0468f3762034_arborum-distribution-licensed.jpg', p: '62% 50%' },
   { k: 'Battery energy storage systems', t: 'Battery Charging + Discharging Optimisation', d: 'AI-powered battery optimisation to maximise returns, reduce deviations and respond dynamically to changing grid conditions.', i: '6af69ac415bf88c09c359668_arborum-bess-licensed.jpg', m: '6af69ac415bf88c09c359668_arborum-bess-licensed.jpg', p: '50% 60%' }
-];
+].map(u => ({ ...u, i: CDN + u.i, m: CDN + u.m }));
 const ROTATE_MS = 7000;
+
+// Read the three use cases from the CMS list on the page; any missing field keeps the built-in value.
+function readCMS() {
+  const items = $$('.home-usecases_data .w-dyn-item');
+  if (!items.length) return FALLBACK;
+  const txt = (el, k) => { const n = el.querySelector('[data-uc="' + k + '"]'); return n && !n.classList.contains('w-dyn-bind-empty') ? n.textContent.trim() : '' };
+  const src = (el, k) => { const n = el.querySelector('img[data-uc="' + k + '"]'); return n && !n.classList.contains('w-dyn-bind-empty') ? (n.getAttribute('src') || '') : '' };
+  const list = items.map((el, j) => ({ el, o: parseFloat(txt(el, 'order')) || j + 1 })).sort((a, b) => a.o - b.o).slice(0, 3);
+  return FALLBACK.map((f, j) => {
+    const el = list[j] && list[j].el; if (!el) return f;
+    const i = src(el, 'photo') || f.i;
+    return { k: txt(el, 'kicker') || f.k, t: txt(el, 'title') || f.t, d: txt(el, 'text') || f.d, i, m: src(el, 'phone') || i, p: txt(el, 'focus') || f.p };
+  });
+}
 
 export default function initUseCases() {
   const tabs = $$('.home-usecases_tab'), panel = $('.home-usecases_panel');
@@ -26,8 +43,14 @@ export default function initUseCases() {
   const card = $('.home-usecases_card', panel), photo = $('.home-usecases_photo', panel);
   const K = $('.home-usecases_kicker', card), T = $('.home-usecases_title', card), D = $('.home-usecases_text', card);
   const bars = tabs.map(t => $('.home-usecases_progress', t));
+  const UC = readCMS();
   let cur = 0, sw, since = performance.now(), vis = false;
-  UC.forEach(u => [u.i, u.m].forEach(s => { const im = new Image(); im.src = CDN + s }));
+  UC.forEach(u => [u.i, u.m].forEach(s => { const im = new Image(); im.src = s }));
+  // the panel in Webflow holds the first use case; show the CMS version of it straight away
+  if (K) K.textContent = UC[0].k;
+  if (T) T.textContent = UC[0].t;
+  if (D) D.textContent = UC[0].d;
+  if (photo) { photo.style.backgroundImage = 'url(' + UC[0].m + ')'; photo.style.backgroundPosition = UC[0].p }
   card.style.transition = 'opacity 220ms ease, filter 220ms ease'; // a light blur bridges old and new text
 
   const autoOn = ON('powerUseCases');
@@ -39,7 +62,7 @@ export default function initUseCases() {
     if (cur < 0) { tabs.forEach((t, j) => { t.style.order = String(j * 2) }); return }
     tabs.forEach((t, j) => { t.style.order = mq.matches ? String(j <= cur ? j * 2 : j * 2 + 2) : '' });
     panel.style.order = mq.matches ? String(cur * 2 + 1) : '';
-    panel.style.backgroundImage = mq.matches ? 'none' : 'url(' + CDN + UC[cur].i + ')';
+    panel.style.backgroundImage = mq.matches ? 'none' : 'url(' + UC[cur].i + ')';
     panel.style.backgroundPosition = UC[cur].p;
   }
   // Phones: a real accordion. The open item's content folds shut where it was while the tapped item's content
@@ -106,7 +129,7 @@ export default function initUseCases() {
     if (i === cur) { if (mq.matches) closeAll(); return }
     const from = cur; cur = i; since = performance.now();
     mark(i);
-    const fill = () => { const u = UC[i]; K.textContent = u.k; T.textContent = u.t; D.textContent = u.d; if (photo) { photo.style.backgroundImage = 'url(' + CDN + u.m + ')'; photo.style.backgroundPosition = u.p } };
+    const fill = () => { const u = UC[i]; K.textContent = u.k; T.textContent = u.t; D.textContent = u.d; if (photo) { photo.style.backgroundImage = 'url(' + u.m + ')'; photo.style.backgroundPosition = u.p } };
     clearTimeout(sw);
     if (mq.matches) { accordion(fill, from); return }
     card.style.opacity = '0'; card.style.filter = RM ? '' : 'blur(2px)';
